@@ -1,0 +1,28 @@
+# Flutter
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/coverage/
+mobile/.pub-cache/
+
+# Node / Vite
+web/node_modules/
+web/dist/
+web/.env*
+!web/.env.example
+
+# Firebase Admin SDK credentials
+**/*service-account*.json
+**/*serviceAccount*.json
+**/*firebase-adminsdk*.json
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
