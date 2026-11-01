@@ -26,3 +26,4 @@ firestore-debug.log
 .vscode/
 .DS_Store
 Thumbs.db
+/web/bun.lock
