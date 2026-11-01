@@ -1,0 +1,17 @@
+.live-header { flex-wrap: wrap; gap: 20px; }
+.live-header nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.live-nav { border: 0; background: transparent; color: #475569; padding: 12px 16px; min-height: 48px; border-radius: 8px; cursor: pointer; font: inherit; }
+.live-nav[aria-current] { background: #dbeafe; color: #1e3a8a; font-weight: 600; }
+.live-content { max-width: 1200px; }
+.live-workspace-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; margin-bottom: 32px; }
+.live-picker { display: grid; gap: 8px; max-width: 100%; }
+.live-picker select { min-height: 48px; padding: 8px 16px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; max-width: 100%; font: inherit; }
+.live-panel, .live-repo, .live-workspace-card { padding: 24px; background: white; border: 1px solid #cbd5e1; border-radius: 12px; overflow-wrap: anywhere; }
+.live-panel h2, .live-workspace-card h2, .live-repo h3 { margin-top: 0; }
+.live-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; }
+.live-workspace-card { text-align: left; color: #0f172a; font: inherit; cursor: pointer; min-height: 160px; }
+.live-workspace-card:hover { border-color: #2563eb; }
+.live-workspace-card span { color: #2563eb; }
+.live-badge { background: #f1f5f9; color: #475569; display: inline-block; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+.live-panel > p { color: #475569; }
+.live-nav:focus-visible, .live-workspace-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
