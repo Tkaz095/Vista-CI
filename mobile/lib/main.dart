@@ -9,9 +9,9 @@ const _page = Color(0xFFF5F7FB);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const VistaCiApp());
 }
 
+runApp(const VistaCiApp());
 class VistaCiApp extends StatelessWidget {
   const VistaCiApp({super.key});
 
