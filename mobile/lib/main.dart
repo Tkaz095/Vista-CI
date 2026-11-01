@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 const _ink = Color(0xFF17243A);
 const _muted = Color(0xFF778399);
 const _blue = Color(0xFF4169E1);
 const _page = Color(0xFFF5F7FB);
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const VistaCiApp());
 }
 
@@ -125,14 +128,14 @@ class PipelineOverviewPage extends StatelessWidget {
           SizedBox(height: 12),
           _SetupStep(
             number: '01',
-            title: 'Connect Firebase',
-            subtitle: 'Create the project and add your app.',
+            title: 'Connect a repository',
+            subtitle: 'Choose which workflows Vista should follow.',
           ),
           SizedBox(height: 10),
           _SetupStep(
             number: '02',
-            title: 'Connect a repository',
-            subtitle: 'Choose which workflows Vista should follow.',
+            title: 'Enable notifications',
+            subtitle: 'Get updates when a workflow finishes.',
           ),
         ],
       ),
@@ -183,12 +186,12 @@ class _FirebaseNotice extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Firebase not connected',
+                  'Waiting for pipeline data',
                   style: TextStyle(color: _ink, fontWeight: FontWeight.w700),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Connect your Firebase project to start showing live pipeline data.',
+                  'Your workflow status will appear after a repository is connected.',
                   style: TextStyle(color: _muted, height: 1.4, fontSize: 12),
                 ),
               ],
