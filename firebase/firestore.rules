@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function activeUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'user';
+    }
+    function workspaceMember(workspaceId) {
+      return activeUser()
+        && request.auth.uid in get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberUids;
+    }
+    match /users/{userId} {
+      // A signed-in user can get their own document even before it exists.
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['displayName', 'role', 'isActive'])
+        && request.resource.data.keys().hasOnly(['displayName', 'role', 'isActive'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.role == 'user'
+        && request.resource.data.isActive == true;
+      // Legacy profiles may only downgrade/normalize their own role to user.
+      // Activation and every other field remain unchanged.
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && resource.data.isActive == true
+        && request.resource.data.role == 'user'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+      allow delete: if false;
+    }
+    match /workspaces/{workspaceId} {
+      // Clients query with memberUids array-contains their own UID.
+      allow read: if activeUser() && request.auth.uid in resource.data.memberUids;
+      allow write: if false;
+      match /repositories/{repositoryId} {
+        allow read: if workspaceMember(workspaceId);
+        allow write: if false;
+      }
+    }
+    // Other documents (runs, logs, audit, actions) remain denied by default.
+  }
+}
