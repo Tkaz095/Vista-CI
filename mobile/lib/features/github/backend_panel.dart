@@ -102,6 +102,10 @@ class _BackendPanelState extends State<BackendPanel> {
           const Text(
             'Web và app dùng chung kết nối theo tài khoản Firebase. Chỉ nhập backend Vista do bạn quản lý; app sẽ gửi Firebase ID token tới địa chỉ này.',
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tải log CI/CD cần cấp quyền public_repo qua Kết nối GitHub. Quyền OAuth này bao gồm đọc và ghi repo public. Nếu gặp lỗi 403, kết nối lại để duyệt quyền bổ sung; gia hạn token không bổ sung quyền mới.',
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: url,
