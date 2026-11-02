@@ -64,3 +64,7 @@ Nguồn repo dùng chung cho web/Flutter. Web giữ header navigation; mobile gi
 ## Trạng thái bản cập nhật này
 
 Chỉ ghi lại phạm vi và phương án dữ liệu để đối chiếu. Chưa sửa runtime code/Rules cho ownerUid, chưa gọi GitHub API, chưa thay đổi Firebase/GitHub Console hoặc commit/push/deploy.
+
+## Cập nhật triển khai
+
+Phạm vi được triển khai ở bước 17: `17-workspace-crud-github.md`. Phần ghi trạng thái chỉ tài liệu ở trên là mốc trước khi viết code. Hướng dẫn Firebase/credential và giới hạn kiểm tra hiện tại nằm ở bước 17.

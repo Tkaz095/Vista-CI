@@ -100,3 +100,7 @@ User taps Sign in
 - Keep ViewModels paired with their Views and named after the feature. Put genuinely reusable UI components in `shared_widgets/`.
 
 Do not put API keys or other secrets in `core/constants/`; use platform configuration or a secret store appropriate to the environment.
+
+## Backend GitHub chung với web
+
+Xem `../docs/project/22-complete-workspace-cicd-mobile.md`. Cấu hình server theo bước21; trong app Tài khoản nhập URL backend và kết nối GitHub bằng trình duyệt một lần. Local dùng adb reverse port5173 và http://localhost:5173; Vercel dùng HTTPS, không cần reverse. SharedPreferences mới cần cold restart. Không đặt GitHub token/Client Secret trong app.

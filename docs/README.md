@@ -10,6 +10,22 @@ Bộ tài liệu này kế thừa có chọn lọc 4 gói SAGA đã cung cấp. 
 
 ## Đọc theo thứ tự
 
+**Mới nhất: [24. Tự gia hạn và lỗi quyền tải log](project/24-refresh-and-log-permission-diagnosis.md).** Đọc trực tiếp xác nhận runs/jobs hoạt động, log bị403 quyền; sửa cooldown sai, single-flight refresh và phân loại OAuth error. Chưa xác minh rotation khi token hết hạn thật.
+
+**Mới nhất: [23. Tự cập nhật CI/CD và cấu hình backend](project/23-auto-update-and-backend-setup.md).** Web tự cập nhật run/job/step; hướng dẫn sửa lỗi thiếu FIREBASE_PROJECT_ID và các biến server. Không cần logout/login để sửa lỗi setup.
+
+**Mới nhất: [22. Mục2–5 trên web và Flutter](project/22-complete-workspace-cicd-mobile.md).** Quản lý connection, workspace→repo→CI/job/log, Flutter dùng backend chung và hướng dẫn điện thoại thật. Cấu hình bên ngoài/kiểm tra runtime còn cần thực hiện; không coi build là nghiệm thu.
+
+**Mục1 mới nhất: [21. GitHub auto-refresh cho web](project/21-github-auto-refresh.md).** Code backend OAuth/vault/refresh đã có, còn cần người dùng cấu hình callback/env/IAM và xác minh runtime. Thay thế sessionStorage token của web ở mốc20; Flutter chưa đổi.
+
+**Bước mới nhất: [20. Workspace → CI/CD → job/log và phiên GitHub](project/20-workspace-navigation-session-logs.md).** Web có thêm repo trong workspace, mở trực tiếp CI của repo, job/step/log gốc và giữ credential qua F5 cùng tab. Mốc20 thay thế mô tả token memory-only và log external-only của web trong mốc17–19; mobile chưa thay đổi.
+
+**UI web mới nhất: [19. Web UI refinement](project/19-web-ui-refinement.md).** Dashboard CI/CD rõ outcome, summary dữ liệu đã tải và header/form thống nhất. Design mục15 ghi hướng áp dụng skill web-design.
+
+**Bước mới nhất: [18. Màn hình CI/CD riêng](project/18-cicd-screen.md).** Web/mobile có Workspace | CI/CD | Tài khoản, đọc lịch sử Actions trực tiếp GitHub, chọn repo và lọc/phân trang. Không cần thay đổi Firebase ở bước này. Các mô tả chưa có CI/CD dưới đây là mốc lịch sử.
+
+**Bước triển khai mới nhất: [17. CRUD workspace và GitHub repo](project/17-workspace-crud-github.md).** Code mobile/web dùng ownerUid; cần người dùng publish Rules mới, cấp quyền GitHub trong app và xác nhận luồng thực tế. Tài liệu 16 là phạm vi, 17 là hiện trạng triển khai.
+
 **Phạm vi mới nhất theo người dùng: [16. Workspace cá nhân và repository](project/16-workspace-ca-nhan-repositories.md).** Tài khoản tự tạo workspace, xem repo GitHub trong Tài khoản, chọn và CRUD liên kết repo trong workspace. Chưa triển khai CI/CD/agent/Admin/chia sẻ ở mốc này. Model ownerUid đang là phương án triển khai, chưa thay đổi runtime.
 
 **Quyết định mới nhất: [15. Một vai trò user và lỗi đọc hồ sơ](project/15-user-only.md).** Role mặc định/duy nhất hiện tại là `user`; Admin để giai đoạn sau. Dùng file `firebase/firestore.rules` mới nhất khi publish.
