@@ -78,6 +78,11 @@ export function GitHubConnection({ onBusy }: { onBusy: (busy: boolean) => void }
         Đăng nhập Vista và quyền API GitHub là hai phần riêng. Token được mã hóa ở backend, không
         lưu trong trình duyệt.
       </p>
+      <p>
+        Để tải log CI/CD, kết nối yêu cầu quyền GitHub public_repo. Quyền OAuth này bao gồm đọc
+        và ghi các repository public. Nếu gặp lỗi tải log 403, bấm Kết nối lại GitHub để duyệt
+        quyền bổ sung; Cập nhật kết nối chỉ gia hạn token hiện tại.
+      </p>
       {info ? (
         <>
           <span className="live-badge">

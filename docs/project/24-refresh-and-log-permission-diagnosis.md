@@ -1,6 +1,14 @@
 # 24. Kiểm tra tự gia hạn và lỗi quyền tải log
 
-Ngày 02/11/2026. Bản này cập nhật cách phân loại lỗi ở bước23. Giữ OAuth scope `read:user offline_access`; không tự bổ sung quyền repository.
+Ngày 02/11/2026. Bản này ghi lại chẩn đoán lỗi ở bước23. Phần chẩn đoán ban đầu bên dưới dùng OAuth scope `read:user offline_access`; xem cập nhật cấp quyền sau đây cho code hiện tại.
+
+## Cập nhật: kết nối lại để duyệt quyền log
+
+- Code hiện tại yêu cầu `read:user public_repo offline_access` trong cả luồng web và mobile. `public_repo` là scope OAuth rộng, bao gồm quyền đọc/ghi repository public; giao diện Tài khoản thông báo rõ trước khi người dùng duyệt quyền GitHub.
+- Không đổi quyền của token đã lưu một cách tự động. Refresh token không nâng scope. Người dùng phải bấm **Kết nối lại GitHub** và duyệt quyền bổ sung.
+- Kiểm tra trực tiếp job `124877202889`: request công khai trả 403 `Must have admin rights to Repository`; request dùng credential GitHub CLI trả 302 có địa chỉ tải log. Không đưa token hoặc URL ký vào log chẩn đoán.
+- Sau khi sửa code: khởi động lại `npm run dev`, vào **Tài khoản → Kết nối lại GitHub**, duyệt quyền, quay lại job và bấm **Tải lại log**. Không cần đổi Firebase Rules, tạo lại secret hoặc tự nhập token.
+- Chưa xác nhận tải log bằng token Vista có scope mới cho đến khi người dùng hoàn tất cấp quyền. Nếu vẫn 403 sau khi cấp quyền, cần kiểm tra scope thực tế được GitHub cấp trước khi kết luận đã sửa xong.
 
 ## Bằng chứng đọc trực tiếp
 

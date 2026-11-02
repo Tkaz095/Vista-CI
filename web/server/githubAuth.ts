@@ -327,7 +327,9 @@ function authorizeUrl(state: OAuthState) {
     client_id: cfg.clientId,
     redirect_uri: cfg.callback,
     state: state.nonce,
-    scope: 'read:user offline_access',
+    // OAuth scopes are coarse: public_repo also grants writes to public repos.
+    // Request it explicitly so existing users can approve the additional access.
+    scope: 'read:user public_repo offline_access',
     code_challenge: createHash('sha256').update(state.verifier).digest('base64url'),
     code_challenge_method: 'S256',
   })
@@ -681,7 +683,7 @@ export async function githubRead(
       403,
       'GITHUB_PERMISSION_DENIED',
       isLog
-        ? `GitHub từ chối tải log job (HTTP 403). ${rejected?.needsRepoAdmin ? 'Endpoint yêu cầu quyền quản lý repository mà token hiện tại chưa đáp ứng.' : 'Token hiện tại chưa có quyền tải log.'} Lỗi này không chặn việc đọc lịch sử và job.`
+        ? `GitHub từ chối tải log job (HTTP 403). ${rejected?.needsRepoAdmin ? 'GitHub yêu cầu quyền repository mà token hiện tại chưa đáp ứng.' : 'Token hiện tại chưa có quyền tải log.'} Mở Tài khoản → Kết nối lại GitHub và duyệt quyền repo public, sau đó tải lại log. Tự gia hạn token không bổ sung quyền mới. Lịch sử và job vẫn xem được.`
         : 'GitHub từ chối quyền truy cập cho yêu cầu này (HTTP 403). Đây không phải thông báo token hết hạn hoặc giới hạn lượt gọi.',
     )
   }

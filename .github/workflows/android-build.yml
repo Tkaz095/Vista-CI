@@ -94,6 +94,9 @@ jobs:
       - name: Analyze Dart code
         run: flutter analyze --no-pub
 
+      - name: Run Flutter tests
+        run: flutter test --no-pub
+
       - name: Build installable development APK
         run: |
           case "$TARGET_PLATFORM" in
