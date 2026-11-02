@@ -3,35 +3,26 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'workspace_repository.dart';
+
 class VistaWorkspace {
-  VistaWorkspace(this.id, this.name, this.description);
-  final String id, name, description;
+  VistaWorkspace(this.id, this.name, this.description, this.status);
+  final String id, name, description, status;
 }
 
 class VistaRepository {
-  VistaRepository(this.id, this.name, this.description);
-  final String id, name, description;
+  VistaRepository(
+    this.id,
+    this.name,
+    this.description,
+    this.fullName,
+    this.htmlUrl,
+  );
+  final String id, name, description, fullName, htmlUrl;
 }
 
 String _text(dynamic value, String fallback) =>
     value is String && value.trim().isNotEmpty ? value.trim() : fallback;
-
-class WorkspaceRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  Stream<QuerySnapshot<Map<String, dynamic>>> workspaces(String uid) => _db
-      .collection('workspaces')
-      .where('memberUids', arrayContains: uid)
-      .limit(50)
-      .snapshots(includeMetadataChanges: true);
-  Stream<QuerySnapshot<Map<String, dynamic>>> repositories(
-    String workspaceId,
-  ) => _db
-      .collection('workspaces')
-      .doc(workspaceId)
-      .collection('repositories')
-      .limit(50)
-      .snapshots(includeMetadataChanges: true);
-}
 
 class WorkspaceViewModel extends ChangeNotifier {
   WorkspaceViewModel(this.uid, this.repository) {
@@ -42,6 +33,7 @@ class WorkspaceViewModel extends ChangeNotifier {
   List<VistaWorkspace> workspaces = [];
   List<VistaRepository> repositories = [];
   String? selectedId;
+  String? _requestedId;
   bool loading = true, repositoriesLoading = false;
   String error = '', repositoriesError = '';
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _workspaces,
@@ -62,7 +54,7 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   String _failure(Object cause) =>
       cause is FirebaseException && cause.code == 'permission-denied'
-      ? 'Chưa có quyền đọc workspace. Hãy cập nhật Firestore Rules theo tài liệu bước 12.'
+      ? 'Chưa có quyền đọc workspace. Hãy publish Firestore Rules ownerUid mới cho project vista-ci, database (default).'
       : 'Không tải được dữ liệu. Kiểm tra mạng và thử lại.';
   void _clearSelection() {
     _repoGeneration++;
@@ -76,6 +68,7 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   void reload() {
     final generation = ++_generation;
+    _requestedId = selectedId;
     _workspaces?.cancel();
     _workspaceDeadline?.cancel();
     _clearSelection();
@@ -108,10 +101,16 @@ class WorkspaceViewModel extends ChangeNotifier {
                     doc.id,
                     _text(doc.data()['name'], doc.id),
                     _text(doc.data()['description'], ''),
+                    _text(doc.data()['status'], 'active'),
                   ),
                 )
                 .toList();
             if (!workspaces.any((w) => w.id == selectedId)) _clearSelection();
+            final requested = _requestedId;
+            if (requested != null && workspaces.any((w) => w.id == requested)) {
+              _requestedId = null;
+              select(requested);
+            }
             _notify();
           },
           onError: (Object cause) {
@@ -124,6 +123,14 @@ class WorkspaceViewModel extends ChangeNotifier {
             _notify();
           },
         );
+  }
+
+  void selectWhenAvailable(String id) {
+    if (workspaces.any((w) => w.id == id)) {
+      select(id);
+    } else {
+      _requestedId = id;
+    }
   }
 
   void select(String id) {
@@ -157,8 +164,10 @@ class WorkspaceViewModel extends ChangeNotifier {
                 .map(
                   (doc) => VistaRepository(
                     doc.id,
-                    _text(doc.data()['name'], doc.id),
-                    _text(doc.data()['description'], ''),
+                    _text(doc.data()['displayName'], doc.id),
+                    _text(doc.data()['note'], ''),
+                    _text(doc.data()['fullName'], ''),
+                    _text(doc.data()['htmlUrl'], ''),
                   ),
                 )
                 .toList();

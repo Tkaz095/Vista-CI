@@ -253,6 +253,12 @@ class _GitHubAccountActionsState extends State<GitHubAccountActions> {
   late bool linked = widget.repository.githubLinked;
   bool pending = false;
   String message = '';
+  @override
+  void didUpdateWidget(covariant GitHubAccountActions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    linked = widget.repository.githubLinked;
+  }
+
   Future<void> act({required bool linking}) async {
     if (pending) return;
     setState(() {
@@ -308,7 +314,7 @@ class _GitHubAccountActionsState extends State<GitHubAccountActions> {
         ),
       const SizedBox(height: 16),
       const Text(
-        'Quyền repository và đồng bộ CI/CD sẽ được cấu hình ở bước kết nối GitHub App.',
+        'Dùng mục Repository GitHub để cấp quyền và tải danh sách repo cho phiên hiện tại.',
       ),
       const SizedBox(height: 20),
       OutlinedButton.icon(

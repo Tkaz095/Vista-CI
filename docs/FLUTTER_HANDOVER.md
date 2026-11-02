@@ -1,5 +1,7 @@
 # Vista CI — Flutter handover
 
+**Hiện hành: Bước 18 ở cuối file và `docs/project/18-cicd-screen.md`.** Ba tab Workspace/CI-CD/Tài khoản, ownerUid và role user; bảng khởi tạo và các mốc trước dưới đây là lịch sử.
+
 Ngày 01/11/2026. Design tham chiếu: `docs/DESIGN.md`. Android package: `com.vista.vista_mobile`.
 
 ## Kiến trúc và ánh xạ màn hình
@@ -37,3 +39,19 @@ AuthRepository đã có `loginWithGitHub`, `linkGitHub` và getter `githubLinked
 ## Cập nhật 02/11/2026 — User only
 
 Mọi hồ sơ mới dùng role `user`. SessionViewModel/transaction tự chuyển role cũ về user nếu hồ sơ active; không thay isActive. Dùng Rules và tài liệu bước 15. Phần Admin/Member trong các mốc trước không còn áp dụng cho cổng đăng nhập hiện tại.
+
+## Bước 17 — Workspace cá nhân
+
+WorkspaceRepository đã tách file riêng: query ownerUid, create batch, edit, remove theo trạng thái deleting; WorkspaceViewModel quan sát server và bỏ callback cũ. WorkspaceScreen có create/edit và ba tab Workspace/Repo/Tài khoản; RepositoryCard xử lý edit/remove link. features/github tách API/token memory, ViewModel phân trang và panel chọn/tải repo. Token lấy từ sign-in/link/reauth native Firebase, không ghi disk/Firestore. Thêm dependencies http/url_launcher, cold restart sau pub get. Chi tiết publish Rules, quyền private và giới hạn kiểm tra ở tài liệu 17. Các ánh xạ Run/Audit và membership trong mốc cũ chưa áp dụng cho UI hiện hành.
+
+## Bước 18 — Màn CI/CD riêng
+
+Điều hướng hiện tại: Workspace | CI/CD | Tài khoản. Danh sách GitHub repo được giữ trong Tài khoản để thêm vào workspace. features/cicd có ViewModel phân trang theo repo, concurrency tối đa 3, filter branch/status phía GitHub, tách status/conclusion, báo lỗi riêng từng repo và bỏ callback cũ bằng generation. Màn CI/CD dùng ScrollPage, chọn repo trong workspace, refresh/tải thêm và mở job/log trên trình duyệt ngoài. Chi tiết và giới hạn tại docs/project/18-cicd-screen.md. Không đổi Firebase Rules/schema trong bước này; chưa có PR/job/log detail trong app, agent/actions/audit/FCM.
+
+## Bước21 — Web GitHub auto-refresh
+
+Web đã chuyển sang backend OAuth/vault/refresh, còn chờ cấu hình và nghiệm thu; Flutter chưa chuyển, vẫn token memory. API web gửi Firebase ID token cho backend để lấy repo/runs/jobs/log; không trả cặp token GitHub cho client. Chi tiết ở docs/project/21-github-auto-refresh.md. Không coi thay đổi web là xác nhận native OAuth/refresh đã hoạt động.
+
+## Bước22 — Flutter dùng backend chung
+
+BackendClient gửi Firebase ID token, từ chối redirect và URL HTTP ngoài loopback debug. GitHubRepository gọi repos/runs/jobs/log/connection, không giữ GitHub token. BackendPanel cấu hình URL + quản lý kết nối. Browser OAuth dùng ticket một lần và polling request có UID; không đưa secret vào app. WorkspaceScreen thêm repo tại chỗ, mở đúng CI, lưu metadata navigation theo UID; RunDetailViewModel/JobLogViewModel đọc job/step/log đúng attempt, bỏ callback sau dispose. GitHubViewModel có generation reset khi đổi backend/kết nối. SharedPreferences chỉ lưu URL/navigation, không credential. Android HTTP loopback chỉ ở debug manifest. Xem tài liệu22 và checklist thật; chưa chứng minh runtime trên điện thoại vì ADB chưa thấy device ở lúc kiểm tra.

@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../github/github_repository.dart';
+
 enum SessionStatus { loading, signedOut, ready, blocked, error }
 
 class VistaProfile {
@@ -34,6 +36,7 @@ String authMessage(Object error) {
     'provider-already-linked' => 'Tài khoản Vista này đã liên kết GitHub.',
     'requires-recent-login' =>
       'Đăng xuất và đăng nhập lại trước khi liên kết GitHub.',
+    'user-mismatch' => 'Bạn đã chọn GitHub của tài khoản khác. Hãy dùng GitHub đã liên kết với tài khoản Vista hiện tại.',
     'no-current-user' =>
       'Phiên đã kết thúc. Đăng nhập lại trước khi liên kết GitHub.',
     'invalid-oauth-client-id' || 'invalid-oauth-provider' =>
@@ -105,7 +108,10 @@ class AuthRepository {
     });
   }
 
-  Future<void> logout() => _auth.signOut();
+  Future<void> logout() {
+    GitHubRepository.instance.clear();
+    return _auth.signOut();
+  }
 }
 
 class SessionViewModel extends ChangeNotifier {
@@ -149,6 +155,7 @@ class SessionViewModel extends ChangeNotifier {
     _profile?.cancel();
     _deadline?.cancel();
     if (user == null) {
+      GitHubRepository.instance.clear();
       _set(SessionStatus.signedOut);
       return;
     }

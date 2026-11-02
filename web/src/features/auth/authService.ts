@@ -1,7 +1,15 @@
-import { GithubAuthProvider, linkWithPopup, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
+import {
+  GithubAuthProvider,
+  linkWithPopup,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth'
 import { doc, onSnapshot, runTransaction } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { auth, db } from '../../lib/firebase'
+import { clearGitHub } from '../github/githubService'
 
 export interface VistaProfile {
   uid: string
@@ -18,7 +26,8 @@ export type AuthSession =
   | { status: 'blocked' | 'error'; message: string }
 
 export function authErrorMessage(error: unknown): string {
-  const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
   switch (code) {
     case 'auth/invalid-credential':
     case 'auth/wrong-password':
@@ -49,6 +58,8 @@ export function authErrorMessage(error: unknown): string {
       return 'Tài khoản Vista này đã liên kết GitHub.'
     case 'auth/requires-recent-login':
       return 'Hãy đăng xuất và đăng nhập lại trước khi liên kết GitHub.'
+    case 'auth/user-mismatch':
+      return 'Bạn đã chọn GitHub của tài khoản khác. Hãy dùng GitHub đã liên kết với tài khoản Vista hiện tại.'
     case 'auth/no-current-user':
       return 'Phiên đã kết thúc. Đăng nhập lại trước khi liên kết GitHub.'
     case 'auth/invalid-oauth-client-id':
@@ -64,14 +75,15 @@ export async function login(email: string, password: string): Promise<void> {
   await signInWithEmailAndPassword(auth, email.trim(), password)
 }
 
-// Firebase handles OAuth; access tokens and secrets are never persisted by Vista.
-// Repository access will use a separate GitHub App connection.
+// Firebase handles Vista sign-in. The backend OAuth connection separately manages GitHub refresh tokens.
 export async function loginWithGitHub(): Promise<void> {
   await signInWithPopup(auth, new GithubAuthProvider())
 }
 
 export function hasGitHubLink(): boolean {
-  return auth.currentUser?.providerData.some(provider => provider.providerId === 'github.com') ?? false
+  return (
+    auth.currentUser?.providerData.some((provider) => provider.providerId === 'github.com') ?? false
+  )
 }
 
 export async function linkGitHub(): Promise<void> {
@@ -81,6 +93,12 @@ export async function linkGitHub(): Promise<void> {
 }
 
 export function logout(): Promise<void> {
+  try {
+    if (auth.currentUser) sessionStorage.removeItem(`vista.navigation.${auth.currentUser.uid}`)
+  } catch {
+    /* Storage unavailable. */
+  }
+  clearGitHub()
   return signOut(auth)
 }
 
@@ -89,7 +107,7 @@ export function logout(): Promise<void> {
 async function ensureOwnProfile(user: User, current: () => boolean): Promise<void> {
   const reference = doc(db, 'users', user.uid)
   const name = user.displayName?.trim() || user.email?.split('@')[0]?.trim() || 'Thành viên Vista'
-  await runTransaction(db, async transaction => {
+  await runTransaction(db, async (transaction) => {
     if (!current()) return
     const existing = await transaction.get(reference)
     if (!current()) return
@@ -121,72 +139,103 @@ export function observeSession(onChange: (session: AuthSession) => void): () => 
     profileDeadline = undefined
   }
   onChange({ status: 'initializing' })
-  const stopAuth = onAuthStateChanged(auth, (user) => {
-    const currentGeneration = ++generation
-    clearProfile()
-    if (!user) {
-      onChange({ status: 'signed_out' })
-      return
-    }
-    const current = () => !disposed && generation === currentGeneration
-    let provisioningAttempted = false
-    const waitForServer = () => {
-      onChange({ status: 'checking_profile' })
-      if (!profileDeadline) profileDeadline = setTimeout(() => {
-        if (current()) onChange({ status: 'error', message: 'Chưa xác minh được hồ sơ với máy chủ. Kiểm tra mạng và thử lại.' })
-      }, 15000)
-    }
-    waitForServer()
-    stopProfile = onSnapshot(doc(db, 'users', user.uid), { includeMetadataChanges: true }, (snapshot) => {
-      if (!current()) return
-      if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
-        waitForServer()
+  const stopAuth = onAuthStateChanged(
+    auth,
+    (user) => {
+      const currentGeneration = ++generation
+      clearProfile()
+      if (!user) {
+        onChange({ status: 'signed_out' })
         return
       }
-      const data = snapshot.data()
-      if (!snapshot.exists() || (data?.isActive === true && data.role !== 'user')) {
-        if (provisioningAttempted) return
-        provisioningAttempted = true
-        waitForServer()
-        void ensureOwnProfile(user, current).catch(error => {
+      const current = () => !disposed && generation === currentGeneration
+      let provisioningAttempted = false
+      const waitForServer = () => {
+        onChange({ status: 'checking_profile' })
+        if (!profileDeadline)
+          profileDeadline = setTimeout(() => {
+            if (current())
+              onChange({
+                status: 'error',
+                message: 'Chưa xác minh được hồ sơ với máy chủ. Kiểm tra mạng và thử lại.',
+              })
+          }, 15000)
+      }
+      waitForServer()
+      stopProfile = onSnapshot(
+        doc(db, 'users', user.uid),
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          if (!current()) return
+          if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+            waitForServer()
+            return
+          }
+          const data = snapshot.data()
+          if (!snapshot.exists() || (data?.isActive === true && data.role !== 'user')) {
+            if (provisioningAttempted) return
+            provisioningAttempted = true
+            waitForServer()
+            void ensureOwnProfile(user, current).catch((error) => {
+              if (!current()) return
+              clearTimeout(profileDeadline)
+              profileDeadline = undefined
+              onChange({
+                status: 'error',
+                message:
+                  error?.code === 'permission-denied'
+                    ? 'Chưa được phép tạo hồ sơ Vista. Hãy publish Firestore Rules mới cho phép tạo hồ sơ User và chuyển vai trò cũ về user, rồi bấm Kiểm tra lại.'
+                    : 'Chưa khởi tạo được hồ sơ Vista. Kiểm tra mạng rồi bấm Kiểm tra lại.',
+              })
+            })
+            return
+          }
+          clearTimeout(profileDeadline)
+          profileDeadline = undefined
+          if (!data || data.isActive !== true) {
+            onChange({
+              status: 'blocked',
+              message: 'Hồ sơ chưa được phép sử dụng Vista. Vui lòng liên hệ người quản trị.',
+            })
+            return
+          }
+          if (data.role !== 'user') {
+            onChange({
+              status: 'blocked',
+              message: 'Chưa chuyển được hồ sơ về user. Bấm Kiểm tra lại sau khi cập nhật Rules.',
+            })
+            return
+          }
+          onChange({
+            status: 'ready',
+            profile: {
+              uid: user.uid,
+              email: user.email ?? '',
+              displayName: typeof data.displayName === 'string' ? data.displayName.trim() : '',
+              role: data.role,
+            },
+          })
+        },
+        (error) => {
           if (!current()) return
           clearTimeout(profileDeadline)
           profileDeadline = undefined
-          onChange({ status: 'error', message: error?.code === 'permission-denied'
-            ? 'Chưa được phép tạo hồ sơ Vista. Hãy publish Firestore Rules mới cho phép tạo hồ sơ User và chuyển vai trò cũ về user, rồi bấm Kiểm tra lại.'
-            : 'Chưa khởi tạo được hồ sơ Vista. Kiểm tra mạng rồi bấm Kiểm tra lại.' })
-        })
-        return
-      }
-      clearTimeout(profileDeadline)
-      profileDeadline = undefined
-      if (!data || data.isActive !== true) {
-        onChange({ status: 'blocked', message: 'Hồ sơ chưa được phép sử dụng Vista. Vui lòng liên hệ người quản trị.' })
-        return
-      }
-      if (data.role !== 'user') {
-        onChange({ status: 'blocked', message: 'Chưa chuyển được hồ sơ về user. Bấm Kiểm tra lại sau khi cập nhật Rules.' })
-        return
-      }
-      onChange({ status: 'ready', profile: {
-        uid: user.uid,
-        email: user.email ?? '',
-        displayName: typeof data.displayName === 'string' ? data.displayName.trim() : '',
-        role: data.role,
-      } })
-    }, (error) => {
-      if (!current()) return
-      clearTimeout(profileDeadline)
-      profileDeadline = undefined
-      onChange({ status: 'error', message: error.code === 'permission-denied'
-        ? 'Firebase từ chối đọc hồ sơ cá nhân (permission-denied). Kiểm tra Rules ở project vista-ci, database (default): phải cho tài khoản đã đăng nhập đọc document users của chính mình, kể cả khi document chưa tồn tại.'
-        : 'Không tải được hồ sơ Vista. Kiểm tra mạng rồi thử lại.' })
-    })
-  }, (error) => {
-    ++generation
-    clearProfile()
-    if (!disposed) onChange({ status: 'error', message: authErrorMessage(error) })
-  })
+          onChange({
+            status: 'error',
+            message:
+              error.code === 'permission-denied'
+                ? 'Firebase từ chối đọc hồ sơ cá nhân (permission-denied). Kiểm tra Rules ở project vista-ci, database (default): phải cho tài khoản đã đăng nhập đọc document users của chính mình, kể cả khi document chưa tồn tại.'
+                : 'Không tải được hồ sơ Vista. Kiểm tra mạng rồi thử lại.',
+          })
+        },
+      )
+    },
+    (error) => {
+      ++generation
+      clearProfile()
+      if (!disposed) onChange({ status: 'error', message: authErrorMessage(error) })
+    },
+  )
   return () => {
     disposed = true
     ++generation

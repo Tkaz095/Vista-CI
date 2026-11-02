@@ -2,7 +2,7 @@
 
 Tài liệu và trạng thái triển khai: [docs/README.md](docs/README.md). Phạm vi mới nhất: [workspace cá nhân và repository](docs/project/16-workspace-ca-nhan-repositories.md).
 
-Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hiện tại tập trung đăng nhập GitHub, hồ sơ user và nền tảng workspace/repository; CI/CD và agent để giai đoạn sau.
+Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hiện tại có đăng nhập GitHub, hồ sơ user, CRUD workspace/repository và màn CI/CD đọc lịch sử GitHub Actions; agent để giai đoạn sau.
 
 ## Project structure
 
@@ -10,9 +10,9 @@ Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hi�
 - `web/` — React + TypeScript dashboard powered by Vite
 - `.github/workflows/` — GitHub Actions workflows
 
-Both clients connect to Firebase project `vista-ci`. GitHub sign-in, account linking and automatic user-profile creation are implemented. Workspace/repository views currently read membership-based Firestore data; self-service workspace creation and GitHub repository discovery are planned in scope 16.
+Both clients connect to Firebase project `vista-ci`. GitHub sign-in, account linking and automatic user-profile creation are implemented. Personal workspace CRUD uses ownerUid. GitHub repository discovery uses the OAuth token in session memory; users can select repositories and manage workspace links. See [implementation and Firebase setup](docs/project/17-workspace-crud-github.md).
 
-Publish [Firestore Rules](firebase/firestore.rules) manually using the Firebase Console. Local code changes do not update the deployed Rules. See [user-only access and troubleshooting](docs/project/15-user-only.md). End-to-end GitHub/profile access on Firebase still needs user confirmation.
+Publish [Firestore Rules](firebase/firestore.rules) manually using the Firebase Console. Local code changes do not update the deployed Rules. See [user-only access and troubleshooting](docs/project/15-user-only.md). End-to-end GitHub/profile/workspace access and the new ownerUid Rules still need user confirmation after publishing.
 
 ## Android cloud build
 
@@ -43,3 +43,7 @@ cd web
 npm install
 npm run dev
 ```
+
+Màn CI/CD riêng, bộ lọc và quyền GitHub: [Bước 18](docs/project/18-cicd-screen.md). Không cần chỉnh Firebase cho bước đọc CI/CD.
+
+Luồng web và Flutter dùng backend GitHub chung, quản lý connection và job/step/log: [Bước22](docs/project/22-complete-workspace-cicd-mobile.md). Cần cấu hình callback/env/IAM theo bước21 trước khi dùng API thật; APK biên dịch thành công không thay cho kiểm tra OAuth/điện thoại.

@@ -695,3 +695,59 @@ Danh sách thay đổi UI cần triển khai sau, chưa làm trong lượt tổn
 5. Phân tích mẫu và audit phiên → giữ nhãn mẫu cho tới khi có tích hợp thật, không bỏ nhãn chỉ vì đã có giao diện.
 
 Cập nhật này chỉ thay tài liệu thiết kế; không sửa ứng dụng, đổi Firebase, gửi dữ liệu cho AI hoặc deploy. File chuẩn là docs/DESIGN.md; DESIGN.md ở gốc chỉ dẫn tới file chuẩn.
+
+## 15. Web refinement — CI/CD dashboard, 02/11/2026
+
+Áp dụng có chọn lọc skill https://github.com/xiaopu-ai/web-design, đọc SKILL.md, checklist, scene defaults và text decoration rules. Đây là đặc tả phần web triển khai ngay theo yêu cầu chỉnh UI; giữ token/phạm vi và hành vi dữ liệu hiện có. Không áp dụng quy trình xin duyệt lại vì người dùng đã yêu cầu chỉnh giao diện và dự án có DESIGN.md.
+
+### 15.1 Visual Theme & Atmosphere
+
+Dashboard kỹ thuật sáng, rõ và gọn. Header điều hướng ngang, thương hiệu nhỏ; workspace nằm trong dải ngữ cảnh; tiêu đề trang đứng riêng, sau đó là bộ lọc, thống kê và danh sách. Phân biệt outcome bằng biểu tượng + chữ + màu và đường nhấn trên hàng. Không dựa riêng vào màu.
+
+### 15.2 Color Palette & Roles
+
+Dùng CSS custom properties ánh xạ YAML: primary/on-primary/container, surface/muted/background, ink/muted, outline/variant, success/error/warning và các container tương ứng. RGB helper primary 37,99,235; ink 15,23,42. Không đổi palette Flutter. Queued/cancelled/skipped/unknown trung tính, running xanh, cần xử lý vàng, pass xanh lá, fail đỏ.
+
+### 15.3 Typography Rules
+
+Giữ Inter + system fallback, không tải Google Fonts động theo quy tắc dự án. H1 28/36, section 18/24, body 14/20, label 12–14; SHA dùng monospace hệ thống. Số thống kê 28/36, tabular-nums. Không gradient chữ/text shadow; không chữ hoa dài tiếng Việt.
+
+### 15.4 Component Stylings
+
+StatusBadge icon+label nền nhẹ, RunRow có icon trạng thái cỡ 36, title và workflow trước, repo/branch/SHA/actor sau; thời gian và link log tách rõ. SummaryCard hiển thị số **trong kết quả đã tải**, không giả làm tổng lịch sử hoặc tỷ lệ hiệu suất. FilterTrigger nhỏ, target48, đếm nhóm lọc áp dụng; native details panel, form draft/apply/reset. Buttons default/hover/active/focus/disabled; disabled giảm opacity/cursor, focus ring primary; error và empty có tiêu đề/nội dung riêng.
+
+### 15.5 Layout Principles
+
+Content max1200, gutter24 desktop/16 narrow, grid summary4/2 cột. Control tối thiểu48px; rows chia cột trên desktop và xếp dọc trên màn hẹp. Không bọc toàn bộ màn bằng một card lớn. Workspace/Account dùng chung header, field styling và cards theo token.
+
+### 15.6 Depth & Elevation
+
+Card phẳng border outline-variant; shadow nhẹ duy nhất cho popover, không gradient/glass. Phân cấp bằng spacing, nền và typography. Hover row đổi surface-muted, không nhảy kích thước.
+
+### 15.7 Animation & Interaction
+
+L1: hover/focus 200ms, nội dung fade opacity200ms, không animate layout số liệu hoặc scroll reveal. Reduced-motion tắt animation/transition. Skeleton tĩnh khi lần đầu tải; loading giữ kết quả đang xem. Không thêm dependency animation.
+
+### 15.8 Do's and Don'ts
+
+- Giữ ngôn ngữ tiếng Việt và tên repo/branch nguyên gốc.
+- Hiển thị thời gian có label và định dạng địa phương.
+- Nêu rõ thống kê và thứ tự chỉ của dữ liệu đã tải.
+- Không dùng màu làm tín hiệu duy nhất.
+- Không dùng trend/uptime/điểm chất lượng hoặc tổng số giả.
+- Không thêm nút Run/AI/PR chưa được nối chức năng.
+- Không thay Auth/API/Firestore để phục vụ thay đổi trình bày.
+- Không tự thêm ảnh, font mạng, nền gradient hoặc motion mạnh.
+- Không cắt mất repo/branch dài; wrap và title khi cần.
+
+### 15.9 Responsive Behavior & Accessibility
+
+Desktop header ngang, summary4, row chia cột. ≤760 summary2, controls wrap; ≤600 nav xuống hàng, row stack, link log vẫn target48, bộ lọc nằm trong flow. Skip link tới nội dung, focus-visible, aria-current, trạng thái async có role, icon trang trí aria-hidden. Mục tiêu không tràn ngang320px+; chưa coi mô tả này là bằng chứng kiểm thử browser.
+
+## 16. Web flow update — 02/11/2026
+
+Workspace có Thêm repository tại chỗ; tên repo/nút CI/CD và log mở đúng repo trong màn CI/CD. Run row mở chi tiết trong Vista, có quay lại danh sách, attempt rõ ràng, job selection, step outcome và log gốc. Failed step và dòng error marker là dẫn chứng GitHub, không phải phân tích agent. Log là văn bản escaped, monospace, có vùng cuộn/focus và wrap tùy chọn; log thiếu/truncated/expired phải nói rõ. Token được giữ theo tab ở web; xem tài liệu20 cho phạm vi bảo mật và runtime local/Vercel. Không thay Flutter trong mốc này.
+
+## 17. Connection và Flutter job/log — bước22
+
+Hai nền tảng giữ Workspace/CI-CD/Tài khoản. Tài khoản có vùng backend/connection; metadata thời hạn không phải token thực. Disconnect có xác nhận phạm vi mọi thiết bị và kết quả thu hồi remote được báo riêng. Mobile dùng formURL, browserhandoff một lần, loading/cancel và error; không có ô nhập GitHub token/UID/secret. Repo card mở đúng CI, CI row có icon+chữ+màu, detail inline có Back, job selector, step lỗi và log selectable/monospace/wrap. Không mở route detail sống ngoài AuthGate. Nội dung/log dài cuộn theo trang, có ghi rõ truncation và phần đầu/cuối. Agent chưa có nút thao tác giả.
