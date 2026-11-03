@@ -1,27 +1,49 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
-import 'package:vista_mobile/core/di/auth_provider.dart';
-import 'package:vista_mobile/data/repositories/auth_repository.dart';
+import 'package:flutter/foundation.dart';
 
-final loginViewModelProvider =
-    StateNotifierProvider<LoginViewModel, AsyncValue<void>>((ref) {
-      final repository = ref.watch(authRepositoryProvider);
-      return LoginViewModel(repository);
-    });
+import '../../core/errors/auth_error_message.dart';
+import '../../data/models/user_profile.dart';
+import '../../data/repositories/auth_repository.dart';
 
-class LoginViewModel extends StateNotifier<AsyncValue<void>> {
-  final AuthRepository _authRepository;
-  LoginViewModel(this._authRepository) : super(const AsyncValue.data(null));
+class AuthViewModel extends ChangeNotifier {
+  AuthViewModel(this._repository);
 
-  Future<void> signInWithGitHub() async {
-    if (state.isLoading) return;
-    state = const AsyncValue.loading();
+  final AuthRepository _repository;
+  UserProfile? profile;
+  bool busy = false;
+  String actionMessage = '';
+  bool _disposed = false;
 
-    final result = await AsyncValue.guard(
-      _authRepository.signInWithGitHub,
-    )
+  Future<void> signInWithGitHub() => _run(() async {
+    final user = await _repository.signInWithGitHub();
+    if (!_disposed) profile = user;
+  });
 
-    if (!mounted) return;
-    state = result;
+  Future<void> signOut() => _run(() async {
+    await _repository.signOut();
+    if (!_disposed) profile = null;
+  });
+
+  // Login and logout share the same button loading/error handling.
+  Future<void> _run(Future<void> Function() action) async {
+    if (_disposed || busy) return;
+    busy = true;
+    actionMessage = '';
+    notifyListeners();
+    try {
+      await action();
+    } catch (error) {
+      if (!_disposed) actionMessage = authErrorMessage(error);
+    } finally {
+      if (!_disposed) {
+        busy = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

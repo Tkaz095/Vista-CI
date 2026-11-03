@@ -38,7 +38,7 @@ class UserProfile {
     return UserProfile(
       uid: uid,
       email: email,
-      displayName: displayName is String ? displayName : "Unknow name",
+      displayName: displayName is String ? displayName.trim() : '',
       role: Role.fromFirestore(data['role']),
       isActive: data['isActive'] == true,
     );
@@ -69,14 +69,4 @@ class CreateProfileData {
       'isActive': isActive,
     };
   }
-}
-
-class ProfileObservation {
-  const ProfileObservation({
-    required this.profile,
-    required this.serverConfirmed,
-  });
-
-  final UserProfile? profile;
-  final bool serverConfirmed;
 }

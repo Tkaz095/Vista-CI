@@ -1,58 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gap/gap.dart';
-import 'package:vista_mobile/ui/auth/auth_view_model.dart';
 
-class LoginView extends ConsumerWidget {
-  const LoginView({super.key});
+import '../home/home_view.dart';
+import 'auth_view_model.dart';
+
+/// Rebuilds the current screen when login or logout updates the ViewModel.
+class AuthView extends StatelessWidget {
+  const AuthView({super.key, required this.viewModel});
+  final AuthViewModel viewModel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final loginState = ref.watch(loginViewModelProvider);
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: viewModel,
+    builder: (context, _) {
+      final profile = viewModel.profile;
+      if (profile == null) return LoginView(viewModel: viewModel);
+      return HomeView(profile: profile, viewModel: viewModel);
+    },
+  );
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Đăng nhập Vista CI')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Chào mừng đến với Vista CI',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const Gap(32),
+class LoginView extends StatelessWidget {
+  const LoginView({super.key, required this.viewModel});
+  final AuthViewModel viewModel;
 
-            // Nút bấm đăng nhập GitHub
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: loginState.isLoading
-                    ? null // Đang loading thì khóa nút lại
-                    : () {
-                        // Kích hoạt hàm đăng nhập trong ViewModel
-                        ref
-                            .read(loginViewModelProvider.notifier)
-                            .signInWithGitHub();
-                      },
-                icon: const Icon(Icons.code),
-                label: loginState.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Đăng nhập với GitHub'),
-              ),
-            ),
-
-            // Hiển thị lỗi nếu có
-            if (loginState.hasError) ...[
-              const Gap(16),
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Vista CI')),
+    body: SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              const Icon(Icons.hub_outlined, size: 52),
+              const SizedBox(height: 24),
               Text(
-                'Lỗi: ${loginState.error}',
-                style: const TextStyle(color: Colors.red),
+                'Đăng nhập Vista',
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
+              const SizedBox(height: 20),
+              const Text(
+                'Theo dõi workspace, repository và các lần chạy CI/CD của nhóm.',
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: viewModel.busy ? null : viewModel.signInWithGitHub,
+                icon: const Icon(Icons.code),
+                label: Text(
+                  viewModel.busy ? 'Đang xác thực…' : 'Tiếp tục với GitHub',
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (viewModel.actionMessage.isNotEmpty)
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    viewModel.actionMessage,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              const Text('Vista tự tạo hồ sơ khi bạn đăng nhập lần đầu.'),
             ],
-          ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

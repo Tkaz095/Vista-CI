@@ -1,33 +1,31 @@
-import 'package:vista_mobile/data/models/auth_identity.dart';
-import 'package:vista_mobile/data/services/firebase_auth_service.dart';
+import '../models/user_profile.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/firestore_profile_service.dart';
 
 class AuthRepository {
-  AuthRepository(this._authService);
+  final FirebaseAuthService _auth = FirebaseAuthService();
+  final FirestoreProfileService _profiles = FirestoreProfileService();
 
-  final FirebaseAuthService _authService;
+  Future<UserProfile> signInWithGitHub() async {
+    final identity = await _auth.signInWithGitHub();
+    final name = identity.displayName.trim();
+    final initialData = CreateProfileData(
+      displayName: name.isEmpty
+          ? 'Vista User'
+          : String.fromCharCodes(name.runes.take(100)),
+    );
 
-  Stream<AuthIdentity?> get identities {
-    return _authService.watchAuthState().map((user) {
-      if (user == null) return null;
+    final data = await _profiles.getOrCreateProfile(
+      identity.uid,
+      initialData.toFirestore(),
+    );
 
-      return AuthIdentity(
-        uid: user.uid,
-        email: user.email ?? ' ',
-        displayName: user.displayName ?? ' ',
-      );
-    });
+    return UserProfile.fromFirestore(
+      uid: identity.uid,
+      email: identity.email,
+      data: data,
+    );
   }
 
-  Future<void> signInWithGitHub() async {
-    try {
-      await _authService.signInWithGitHub();
-    } catch (error) {
-      throw Exception(error);
-    }
-  }
-
-  Future<void> signOut() async {
-    await _authService.signOut();
-  }
+  Future<void> signOut() => _auth.signOut();
 }
-

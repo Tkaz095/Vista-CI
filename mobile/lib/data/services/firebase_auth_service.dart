@@ -1,26 +1,21 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/auth_identity.dart';
+
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Stream<User?> watchAuthState() {
-    return _auth.authStateChanges();
+  Future<AuthIdentity> signInWithGitHub() async {
+    final result = await _auth.signInWithProvider(GithubAuthProvider());
+    final user = result.user;
+    if (user == null) throw StateError('Firebase returned no user');
+
+    return AuthIdentity(
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName ?? '',
+    );
   }
 
-  Future<User> signInWithGitHub() async {
-    final githubProvider = GithubAuthProvider();
-
-    final userCredential = await _auth.signInWithProvider(githubProvider);
-
-    final user = userCredential.user;
-    if (user == null) {
-      throw StateError("Firebase returned no user");
-    }
-
-    return userCredential.user!;
-  }
-
-  Future<void> signOut() {
-    return _auth.signOut();
-  }
+  Future<void> signOut() => _auth.signOut();
 }

@@ -1,34 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreProfileService {
-  final FirebaseFirestore _fireStore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  DocumentReference<Map<String, dynamic>> _profileRef(String uid) {
-    return _fireStore.collection('users').doc(uid);
-  }
-
-  Stream<DocumentSnapshot<Map<String, dynamic>>> watchProfile(String uid) {
-    return _profileRef(uid).snapshots(
-      includeMetadataChanges: true,
-    );
-  }
-
-  /// Returns true when created, or false if the profile already exists.
-  Future<bool> createProfileIfMissing(
+  /// Creates a new document, or returns the existing data without overwriting it.
+  Future<Map<String, dynamic>> getOrCreateProfile(
     String uid,
     Map<String, dynamic> initialData,
   ) {
-    final reference = _profileRef(uid);
+    final reference = _firestore.collection('users').doc(uid);
 
-    return _fireStore.runTransaction<bool>((transaction) async {
+    return _firestore.runTransaction<Map<String, dynamic>>((transaction) async {
       final snapshot = await transaction.get(reference);
-
-      if (snapshot.exists) {
-        return false;
-      }
+      final existingData = snapshot.data();
+      if (existingData != null) return existingData;
 
       transaction.set(reference, initialData);
-      return true;
+      return initialData;
     });
   }
 }

@@ -3,9 +3,9 @@ import 'dart:ui' show PointerDeviceKind;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'features/auth/session_view_model.dart';
-import 'features/auth/session_views.dart';
-import 'features/workspaces/workspace_screen.dart';
+import 'data/repositories/auth_repository.dart';
+import 'ui/auth/auth_view.dart';
+import 'ui/auth/auth_view_model.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,69 +82,45 @@ class _InitializationErrorState extends State<InitializationError> {
   }
 
   @override
-  Widget build(BuildContext context) => StatusPage(
-    title: 'Chưa khởi tạo được Firebase',
-    message: 'Kiểm tra cấu hình Android google-services.json và kết nối mạng.',
-    actions: [
-      FilledButton(
-        onPressed: pending ? null : retry,
-        child: Text(pending ? 'Đang thử…' : 'Thử lại'),
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Vista CI')),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          Text(
+            'Chưa khởi tạo được Firebase',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Kiểm tra cấu hình Android google-services.json và kết nối mạng.',
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: pending ? null : retry,
+            child: Text(pending ? 'Đang thử…' : 'Thử lại'),
+          ),
+        ],
       ),
-    ],
+    ),
   );
 }
 
 class SessionGate extends StatefulWidget {
-  const SessionGate({super.key, this.repository});
-  final AuthRepository? repository;
+  const SessionGate({super.key});
   @override
   State<SessionGate> createState() => _SessionGateState();
 }
 
 class _SessionGateState extends State<SessionGate> {
-  late final SessionViewModel session = SessionViewModel(
-    widget.repository ?? AuthRepository(),
-  );
+  final AuthViewModel viewModel = AuthViewModel(AuthRepository());
   @override
   void dispose() {
-    session.dispose();
+    viewModel.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: session,
-    builder: (context, _) {
-      switch (session.status) {
-        case SessionStatus.loading:
-          return const StatusPage(
-            title: 'Đang xác minh phiên và hồ sơ',
-            message: 'Vui lòng chờ kết quả từ Firebase.',
-            actions: [CircularProgressIndicator()],
-          );
-        case SessionStatus.signedOut:
-          return LoginScreen(repository: session.repository);
-        case SessionStatus.ready:
-          final profile = session.profile!;
-          return WorkspaceScreen(
-            key: ValueKey(profile.uid),
-            profile: profile,
-            auth: session.repository,
-          );
-        case SessionStatus.blocked:
-        case SessionStatus.error:
-          return StatusPage(
-            title: 'Chưa thể mở Vista',
-            message: session.message,
-            actions: [
-              FilledButton(
-                onPressed: session.retry,
-                child: const Text('Kiểm tra lại'),
-              ),
-              LogoutButton(repository: session.repository),
-            ],
-          );
-      }
-    },
-  );
+  Widget build(BuildContext context) => AuthView(viewModel: viewModel);
 }
