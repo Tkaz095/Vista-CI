@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../home/home_view.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_header.dart';
+import '../widgets/app_message.dart';
 import 'auth_view_model.dart';
 
 /// Rebuilds the current screen when login or logout updates the ViewModel.
@@ -29,13 +33,13 @@ class LoginView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Vista CI')),
+    appBar: const AppHeader(showNotifications: false),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.page),
             children: [
               const Icon(Icons.hub_outlined, size: 52),
               const SizedBox(height: 24),
@@ -48,24 +52,16 @@ class LoginView extends StatelessWidget {
                 'Theo dõi workspace, repository và các lần chạy CI/CD của nhóm.',
               ),
               const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: viewModel.busy ? null : viewModel.signInWithGitHub,
-                icon: const Icon(Icons.code),
-                label: Text(
-                  viewModel.busy ? 'Đang xác thực…' : 'Tiếp tục với GitHub',
-                ),
+              AppButton(
+                label: 'Tiếp tục với GitHub',
+                loadingLabel: 'Đang xác thực…',
+                isLoading: viewModel.busy,
+                onPressed: viewModel.signInWithGitHub,
+                icon: Icons.code,
               ),
               const SizedBox(height: 20),
               if (viewModel.actionMessage.isNotEmpty)
-                Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    viewModel.actionMessage,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
+                AppMessage(message: viewModel.actionMessage),
               const SizedBox(height: 20),
               const Text('Vista tự tạo hồ sơ khi bạn đăng nhập lần đầu.'),
               const SizedBox(height: 12),

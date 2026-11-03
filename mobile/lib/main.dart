@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'data/repositories/auth_repository.dart';
 import 'ui/auth/auth_view.dart';
 import 'ui/auth/auth_view_model.dart';
+import 'ui/theme/app_theme.dart';
+import 'ui/widgets/app_button.dart';
+import 'ui/widgets/app_header.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,24 +38,7 @@ class VistaCiApp extends StatelessWidget {
     title: 'Vista CI',
     debugShowCheckedModeBanner: false,
     scrollBehavior: const VistaScrollBehavior(),
-    theme: ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFFF8FAFC),
-        scrolledUnderElevation: 0,
-      ),
-    ),
+    theme: AppTheme.light,
     home: initializationFailed
         ? const InitializationError()
         : const SessionGate(),
@@ -83,10 +69,10 @@ class _InitializationErrorState extends State<InitializationError> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Vista CI')),
+    appBar: const AppHeader(showNotifications: false),
     body: SafeArea(
       child: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           Text(
             'Chưa khởi tạo được Firebase',
@@ -97,9 +83,11 @@ class _InitializationErrorState extends State<InitializationError> {
             'Kiểm tra cấu hình Android google-services.json và kết nối mạng.',
           ),
           const SizedBox(height: 20),
-          FilledButton(
-            onPressed: pending ? null : retry,
-            child: Text(pending ? 'Đang thử…' : 'Thử lại'),
+          AppButton(
+            label: 'Thử lại',
+            loadingLabel: 'Đang thử…',
+            isLoading: pending,
+            onPressed: retry,
           ),
         ],
       ),

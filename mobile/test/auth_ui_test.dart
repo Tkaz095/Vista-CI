@@ -10,6 +10,10 @@ import 'package:vista_mobile/main.dart';
 import 'package:vista_mobile/ui/auth/auth_view.dart';
 import 'package:vista_mobile/ui/auth/auth_view_model.dart';
 import 'package:vista_mobile/ui/home/home_view.dart';
+import 'package:vista_mobile/ui/theme/app_theme.dart';
+import 'package:vista_mobile/ui/widgets/app_bottom_tab.dart';
+import 'package:vista_mobile/ui/widgets/app_header.dart';
+import 'package:vista_mobile/ui/widgets/app_stack_header.dart';
 
 const testProfile = UserProfile(
   uid: 'user-a',
@@ -54,7 +58,12 @@ void main() {
   tearDown(() => model.dispose());
 
   testWidgets('The app starts with a GitHub-only login', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: AuthView(viewModel: model)));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AuthView(viewModel: model),
+      ),
+    );
     expect(find.text('Đăng nhập Vista'), findsOneWidget);
     expect(find.text('Tiếp tục với GitHub'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
@@ -64,15 +73,23 @@ void main() {
   testWidgets('GitHub login opens Home and logout returns to login', (
     tester,
   ) async {
-    await tester.pumpWidget(MaterialApp(home: AuthView(viewModel: model)));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AuthView(viewModel: model),
+      ),
+    );
     await tester.tap(find.text('Tiếp tục với GitHub'));
     await tester.pumpAndSettle();
     expect(repository.signInCalls, 1);
     expect(find.byType(HomeView), findsOneWidget);
-    expect(find.text('Trang chủ'), findsOneWidget);
+    expect(find.byType(AppHeader), findsOneWidget);
+    expect(find.byType(AppBottomTab), findsOneWidget);
     expect(find.text(testProfile.email), findsOneWidget);
 
-    await tester.tap(find.text('Đăng xuất'));
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(repository.signOutCalls, 1);
     expect(find.byType(HomeView), findsNothing);
@@ -83,7 +100,12 @@ void main() {
     'Pending login cannot be submitted twice and cancellation is readable',
     (tester) async {
       repository.result = Completer<UserProfile>();
-      await tester.pumpWidget(MaterialApp(home: AuthView(viewModel: model)));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: AuthView(viewModel: model),
+        ),
+      );
       await tester.tap(find.text('Tiếp tục với GitHub'));
       await tester.pump();
       expect(find.text('Đang xác thực…'), findsOneWidget);
@@ -103,7 +125,12 @@ void main() {
     'A Firestore failure keeps login open and allows another attempt',
     (tester) async {
       repository.result = Completer<UserProfile>();
-      await tester.pumpWidget(MaterialApp(home: AuthView(viewModel: model)));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: AuthView(viewModel: model),
+        ),
+      );
       await tester.tap(find.text('Tiếp tục với GitHub'));
       repository.result!.completeError(
         FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied'),
@@ -125,8 +152,15 @@ void main() {
     repository.signOutError = FirebaseAuthException(
       code: 'network-request-failed',
     );
-    await tester.pumpWidget(MaterialApp(home: AuthView(viewModel: model)));
-    await tester.tap(find.text('Đăng xuất'));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AuthView(viewModel: model),
+      ),
+    );
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(find.byType(HomeView), findsOneWidget);
     expect(find.textContaining('Kiểm tra mạng'), findsOneWidget);
@@ -141,6 +175,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: const TextScaler.linear(1.8)),
@@ -176,6 +211,7 @@ void main() {
     await model.signInWithGitHub();
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: const TextScaler.linear(1.8)),
@@ -185,15 +221,72 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Đăng xuất'));
+    await tester.tap(find.text('Action'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(find.text('Đăng nhập Vista'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Tabs preserve project search and stack screens return to Home', (
+    tester,
+  ) async {
+    await model.signInWithGitHub();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AuthView(viewModel: model),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'vista');
+
+    await tester.tap(find.text('Action'));
+    await tester.pumpAndSettle();
+    expect(find.text('Action screen'), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isFalse);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      0,
+    );
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      'vista',
+    );
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Profile screen'), findsOneWidget);
+    expect(find.byType(AppHeader), findsOneWidget);
+    expect(find.byType(AppBottomTab), findsOneWidget);
+    expect(find.byType(AppStackHeader), findsNothing);
+    await tester.tap(find.text('Projects'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      'vista',
+    );
+
+    await tester.tap(find.text('Tạo project'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppStackHeader), findsOneWidget);
+    expect(find.byType(AppBottomTab), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(AppBottomTab), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('Mouse drag scrolls overflowing content', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light,
         scrollBehavior: const VistaScrollBehavior(),
         home: Scaffold(
           body: ListView(

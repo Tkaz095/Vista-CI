@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/project.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_chip.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/app_message.dart';
+import '../widgets/app_stack_header.dart';
+import '../widgets/app_text_field.dart';
 import 'projects_view_model.dart';
 
 class ProjectFormView extends StatefulWidget {
@@ -60,16 +67,15 @@ class _ProjectFormViewState extends State<ProjectFormView> {
       return PopScope(
         canPop: !model.saving,
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(
-              widget.project == null ? 'Tạo project' : 'Chỉnh sửa project',
-            ),
+          appBar: AppStackHeader(
+            title: widget.project == null ? 'Tạo project' : 'Chỉnh sửa project',
+            canGoBack: !model.saving,
           ),
           body: SafeArea(
             child: Form(
               key: formKey,
               child: ListView.builder(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppSpacing.page),
                 itemCount: repos.length + 1,
                 itemBuilder: (context, index) {
                   if (index > 0) {
@@ -101,13 +107,11 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextFormField(
+                      AppTextField(
+                        label: 'Tên project',
                         controller: nameController,
                         enabled: !model.saving,
                         maxLength: Project.maxNameLength,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên project',
-                        ),
                         validator: (value) {
                           final name = value?.trim() ?? '';
                           if (name.isEmpty) return 'Nhập tên project.';
@@ -118,15 +122,13 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      AppTextField(
+                        label: 'Mô tả (không bắt buộc)',
                         controller: descriptionController,
                         enabled: !model.saving,
                         maxLength: Project.maxDescriptionLength,
                         minLines: 2,
                         maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Mô tả (không bắt buộc)',
-                        ),
                         validator: (value) =>
                             (value?.trim().length ?? 0) >
                                 Project.maxDescriptionLength
@@ -134,24 +136,18 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                             : null,
                       ),
                       const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: model.saving || model.loadingProjects
-                            ? null
-                            : _saveProject,
-                        icon: const Icon(Icons.save_outlined),
-                        label: Text(model.saving ? 'Đang lưu…' : 'Lưu project'),
+                      AppButton(
+                        label: 'Lưu project',
+                        loadingLabel: 'Đang lưu…',
+                        isLoading: model.saving,
+                        onPressed: model.loadingProjects ? null : _saveProject,
+                        icon: Icons.save_outlined,
                       ),
                       if (model.saveError.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            model.saveError,
-                            style: TextStyle(color: theme.colorScheme.error),
-                          ),
-                        ),
+                        AppMessage(message: model.saveError),
                       ],
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.section),
                       Text(
                         'Repo đã chọn (${selectedIds.length}/${Project.maxRepositories})',
                         style: theme.textTheme.titleLarge,
@@ -167,13 +163,11 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                           runSpacing: 8,
                           children: [
                             for (final repo in model.selectedRepositories)
-                              InputChip(
-                                label: Text(repo.fullName),
+                              AppChip(
+                                label: repo.fullName,
                                 onDeleted: model.saving
                                     ? null
                                     : () => model.removeRepository(repo.id),
-                                deleteButtonTooltipMessage:
-                                    'Bỏ ${repo.fullName}',
                               ),
                           ],
                         ),
@@ -188,22 +182,23 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                             'Chọn repo từ GitHub',
                             style: theme.textTheme.titleMedium,
                           ),
-                          TextButton.icon(
-                            onPressed: model.loadingRepositories || model.saving
+                          AppButton(
+                            label: 'Đồng bộ repo',
+                            loadingLabel: 'Đang đồng bộ…',
+                            variant: AppButtonVariant.text,
+                            isLoading: model.loadingRepositories,
+                            onPressed: model.saving
                                 ? null
                                 : model.loadGitHubRepositories,
-                            icon: const Icon(Icons.sync),
-                            label: const Text('Đồng bộ repo'),
+                            icon: Icons.sync,
                           ),
                         ],
                       ),
-                      TextFormField(
+                      AppTextField(
+                        label: 'Tìm repo',
+                        prefixIcon: Icons.search,
                         initialValue: model.repositorySearch,
                         onChanged: model.setRepositorySearch,
-                        decoration: const InputDecoration(
-                          labelText: 'Tìm repo',
-                          prefixIcon: Icon(Icons.search),
-                        ),
                       ),
                       const SizedBox(height: 12),
                       if (model.loadingRepositories)
@@ -211,18 +206,12 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                           semanticsLabel: 'Đang tải repo GitHub',
                         ),
                       if (model.repositoryError.isNotEmpty)
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            model.repositoryError,
-                            style: TextStyle(color: theme.colorScheme.error),
-                          ),
-                        ),
+                        AppMessage(message: model.repositoryError),
                       if (!model.loadingRepositories &&
                           model.repositoryError.isEmpty &&
                           repos.isEmpty)
-                        Text(
-                          model.repositorySearch.trim().isEmpty
+                        AppEmptyState(
+                          message: model.repositorySearch.trim().isEmpty
                               ? 'GitHub chưa trả về repo nào.'
                               : 'Không tìm thấy repo phù hợp.',
                         ),

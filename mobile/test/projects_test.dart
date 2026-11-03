@@ -10,6 +10,7 @@ import 'package:vista_mobile/data/services/github_service.dart';
 import 'package:vista_mobile/ui/projects/project_form_view.dart';
 import 'package:vista_mobile/ui/projects/projects_view.dart';
 import 'package:vista_mobile/ui/projects/projects_view_model.dart';
+import 'package:vista_mobile/ui/theme/app_theme.dart';
 
 import 'auth_ui_test.dart' show testProfile;
 
@@ -380,6 +381,7 @@ void main() {
     await model.loadProjects();
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light,
         home: Scaffold(
           body: ProjectsView(viewModel: model, profile: testProfile),
         ),
@@ -464,6 +466,7 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
+          theme: AppTheme.light,
           home: ProjectFormView(viewModel: model, project: testProject),
         ),
       );
@@ -494,6 +497,7 @@ void main() {
     ];
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: const TextScaler.linear(1.8)),

@@ -3,6 +3,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/project.dart';
 import '../../data/models/user_profile.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/app_message.dart';
+import '../widgets/app_stack_header.dart';
+import '../widgets/app_text_field.dart';
 import 'project_form_view.dart';
 import 'projects_view_model.dart';
 
@@ -25,7 +31,12 @@ class ProjectsView extends StatelessWidget {
         onRefresh: viewModel.saving ? () async {} : viewModel.loadProjects,
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.page,
+            AppSpacing.medium,
+            AppSpacing.page,
+            AppSpacing.section,
+          ),
           itemCount: projects.length + 1,
           itemBuilder: (context, index) {
             if (index == 0) return _header(context, projects.isEmpty);
@@ -70,7 +81,7 @@ class ProjectsView extends StatelessWidget {
       children: [
         Text('Xin chào, $name', style: theme.textTheme.titleMedium),
         if (profile.email.isNotEmpty) Text(profile.email),
-        const SizedBox(height: 28),
+        const SizedBox(height: AppSpacing.section),
         Text('Project của bạn', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 8),
         const Text('Nhóm các repo GitHub theo từng project.'),
@@ -79,7 +90,8 @@ class ProjectsView extends StatelessWidget {
           spacing: 12,
           runSpacing: 8,
           children: [
-            FilledButton.icon(
+            AppButton(
+              label: 'Tạo project',
               onPressed: viewModel.saving || viewModel.loadingProjects
                   ? null
                   : () => Navigator.of(context).push(
@@ -87,26 +99,24 @@ class ProjectsView extends StatelessWidget {
                         builder: (_) => ProjectFormView(viewModel: viewModel),
                       ),
                     ),
-              icon: const Icon(Icons.add),
-              label: const Text('Tạo project'),
+              icon: Icons.add,
             ),
-            OutlinedButton.icon(
-              onPressed: viewModel.loadingProjects || viewModel.saving
-                  ? null
-                  : viewModel.loadProjects,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Tải lại'),
+            AppButton(
+              label: 'Tải lại',
+              loadingLabel: 'Đang tải…',
+              variant: AppButtonVariant.secondary,
+              isLoading: viewModel.loadingProjects,
+              onPressed: viewModel.saving ? null : viewModel.loadProjects,
+              icon: Icons.refresh,
             ),
           ],
         ),
         const SizedBox(height: 20),
-        TextFormField(
+        AppTextField(
+          label: 'Tìm project',
+          prefixIcon: Icons.search,
           initialValue: viewModel.projectSearch,
           onChanged: viewModel.setProjectSearch,
-          decoration: const InputDecoration(
-            labelText: 'Tìm project',
-            prefixIcon: Icon(Icons.search),
-          ),
         ),
         if (viewModel.loadingProjects) ...[
           const SizedBox(height: 20),
@@ -114,20 +124,14 @@ class ProjectsView extends StatelessWidget {
         ],
         if (viewModel.projectError.isNotEmpty) ...[
           const SizedBox(height: 20),
-          Semantics(
-            liveRegion: true,
-            child: Text(
-              viewModel.projectError,
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-          ),
+          AppMessage(message: viewModel.projectError),
         ],
         if (empty &&
             !viewModel.loadingProjects &&
             viewModel.projectError.isEmpty) ...[
-          const SizedBox(height: 28),
-          Text(
-            viewModel.projectSearch.trim().isEmpty
+          const SizedBox(height: AppSpacing.section),
+          AppEmptyState(
+            message: viewModel.projectSearch.trim().isEmpty
                 ? 'Chưa có project. Tạo project đầu tiên rồi chọn các repo của bạn.'
                 : 'Không tìm thấy project phù hợp. Hãy thử từ khóa khác.',
           ),
@@ -152,13 +156,15 @@ class _ProjectDetailsView extends StatelessWidget {
           'Xóa “${project.name}” khỏi Vista? Các repo trên GitHub vẫn được giữ.',
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Giữ lại',
+            variant: AppButtonVariant.text,
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Giữ lại'),
           ),
-          TextButton(
+          AppButton(
+            label: 'Xóa project',
+            variant: AppButtonVariant.danger,
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa project'),
           ),
         ],
       ),
@@ -197,15 +203,20 @@ class _ProjectDetailsView extends StatelessWidget {
       return PopScope(
         canPop: !viewModel.saving,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Chi tiết project')),
+          appBar: AppStackHeader(
+            title: 'Chi tiết project',
+            canGoBack: !viewModel.saving,
+          ),
           body: SafeArea(
             child: project == null
                 ? const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Project không còn trong danh sách.'),
+                    padding: EdgeInsets.all(AppSpacing.page),
+                    child: AppEmptyState(
+                      message: 'Project không còn trong danh sách.',
+                    ),
                   )
                 : ListView(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(AppSpacing.page),
                     children: [
                       Text(
                         project.name,
@@ -220,7 +231,8 @@ class _ProjectDetailsView extends StatelessWidget {
                         spacing: 12,
                         runSpacing: 8,
                         children: [
-                          FilledButton.icon(
+                          AppButton(
+                            label: 'Chỉnh sửa',
                             onPressed:
                                 viewModel.saving || viewModel.loadingProjects
                                 ? null
@@ -232,61 +244,50 @@ class _ProjectDetailsView extends StatelessWidget {
                                       ),
                                     ),
                                   ),
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Chỉnh sửa'),
+                            icon: Icons.edit_outlined,
                           ),
-                          OutlinedButton.icon(
-                            onPressed:
-                                viewModel.saving || viewModel.loadingProjects
+                          AppButton(
+                            label: 'Xóa project',
+                            loadingLabel: 'Đang xóa…',
+                            isLoading: viewModel.saving,
+                            variant: AppButtonVariant.danger,
+                            onPressed: viewModel.loadingProjects
                                 ? null
                                 : () => _deleteProject(context, project),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .error,
-                            ),
-                            icon: const Icon(Icons.delete_outline),
-                            label: Text(
-                              viewModel.saving ? 'Đang lưu…' : 'Xóa project',
-                            ),
+                            icon: Icons.delete_outline,
                           ),
                         ],
                       ),
                       if (viewModel.saveError.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            viewModel.saveError,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                        ),
+                        AppMessage(message: viewModel.saveError),
                       ],
                       if (viewModel.projectError.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(viewModel.projectError),
+                        AppMessage(
+                          message: viewModel.projectError,
+                          type: AppMessageType.warning,
                         ),
-                        TextButton(
-                          onPressed:
-                              viewModel.loadingProjects || viewModel.saving
+                        AppButton(
+                          label: 'Tải lại project',
+                          loadingLabel: 'Đang tải…',
+                          variant: AppButtonVariant.text,
+                          isLoading: viewModel.loadingProjects,
+                          onPressed: viewModel.saving
                               ? null
                               : viewModel.loadProjects,
-                          child: const Text('Tải lại project'),
                         ),
                       ],
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.section),
                       Text(
                         'Repo trong project (${project.repositories.length})',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 12),
                       if (project.repositories.isEmpty)
-                        const Text(
-                          'Project chưa có repo. Chọn “Chỉnh sửa” để thêm.',
+                        const AppEmptyState(
+                          message:
+                              'Project chưa có repo. Chọn “Chỉnh sửa” để thêm.',
                         ),
                       for (final repo in project.repositories) ...[
                         const Divider(),

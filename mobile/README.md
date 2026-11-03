@@ -17,6 +17,42 @@ Firebase Core is configured for Android with project `vista-ci` and package ID `
 
 Enable GitHub sign-in in Firebase Authentication and publish the project Firestore Rules before testing OAuth on a device. iOS Firebase setup is not included yet; use Android for this milestone.
 
+## Theme Material 3
+
+`lib/ui/theme/app_theme.dart` ánh xạ màu, typography, spacing và style Material từ `../docs/DESIGN.md`. `main.dart` áp dụng `AppTheme.light`; màn hình lấy kiểu chữ/màu qua `Theme.of(context)`. Input/button bo góc 8, card 12, dialog/sheet 16; control có vùng chạm tối thiểu 48. Màu chuẩn được ghi đè trên ColorScheme để giữ primary `#2563EB`, secondary `#0F766E`, tertiary `#7C3AED`.
+
+Inter 4.1 Regular/SemiBold/Bold được đóng gói trong `assets/fonts/inter/`, khai báo ở pubspec; không tải font khi app chạy. Nguồn: https://github.com/rsms/inter/releases/tag/v4.1; giấy phép SIL OFL nằm cùng thư mục và được đưa vào assets. Phosphor icons và Geist Mono cho màn log sẽ được xử lý cùng các màn hình tương ứng; hiện vẫn dùng Material Icons.
+
+### Widget dùng chung
+
+Các widget nằm trong `lib/ui/widgets/` và lấy style từ theme:
+
+- `AppButton`: primary, secondary, danger và text; icon tùy chọn; khóa bấm khi `isLoading` và hiển thị spinner/`loadingLabel`. Caller đặt `onPressed: null` khi cần vô hiệu hóa vì lý do khác.
+- `AppTextField`: nhãn, gợi ý, validator, controller hoặc initialValue, callback tìm kiếm, giới hạn ký tự và nhiều dòng. Màn hình tạo/dispose controller; validator vẫn nằm ở form.
+- `AppChip`: nhãn đầy đủ qua tooltip và callback bỏ chọn; không chứa logic repo.
+- `AppMessage`: thông báo error (mặc định), warning, success hoặc info; icon + chữ và live region cho trình đọc màn hình. Message rỗng không hiển thị.
+- `AppEmptyState`: thông báo chưa có dữ liệu/không tìm thấy; có thể truyền cả `actionLabel` và `onAction` để hiện nút hành động.
+- `AppHeader`: header chính có logo `assets/logo/logo.png`, dùng ở Login và các tab Home. `showNotifications: false` ẩn chuông ở Login/màn lỗi khởi tạo. Home hiện chuông disabled với tooltip chưa triển khai; chỉ bật khi có callback thật, không hiển thị dấu unread giả. `actions` nhận các nút của màn hình; Home truyền nút Đăng xuất trong khi Profile còn là màn tạm.
+- `AppStackHeader`: tiêu đề và nút quay lại cho chi tiết/tạo/sửa project; `canGoBack: false` khóa nút trong lúc lưu/xóa, cùng với `PopScope` của màn hình.
+- `AppBottomTab`: thanh Material 3 với ba tab Projects, Action và Profile; nhận `selectedTab` và `onSelected`. Home giữ tab hiện tại bằng state của View, không thêm ViewModel cho việc đổi tab.
+
+Ví dụ trong màn hình:
+
+```dart
+AppButton(
+  label: 'Lưu project',
+  loadingLabel: 'Đang lưu…',
+  isLoading: model.saving,
+  icon: Icons.save_outlined,
+  onPressed: _saveProject,
+)
+```
+
+Đã dùng các widget này ở Login, Home, danh sách/chi tiết/form project, dialog xác nhận xóa và màn lỗi khởi tạo Firebase. Widget chỉ nhận dữ liệu/callback; ViewModel vẫn quản lý trạng thái và gọi repository. `CheckboxListTile`, `ListTile`, `AlertDialog` và progress indicator của vùng dữ liệu vẫn dùng Material trực tiếp. Không thêm package mới.
+
+Home dùng `IndexedStack` để giữ danh sách, từ khóa tìm kiếm và vị trí cuộn khi đổi tab. Projects giữ nguyên CRUD hiện tại; `ActionView` và `ProfileView` chỉ hiển thị text để kiểm tra điều hướng, chưa có nghiệp vụ hoặc ViewModel. Header và bottom tab nằm chung ở Home, không lặp lại trong từng tab. Nút Back hệ thống từ Action/Profile trở về Projects. Màn chi tiết/form được push bằng `Navigator` lên stack, dùng `AppStackHeader` và không hiện bottom tab; quay lại vẫn giữ tab Projects. Ba ảnh trong `figma/` là mẫu tham khảo header/bottom tab; màu và chữ tiếp tục dùng theme của app.
+
+
 ## Luồng auth đang chạy
 
 Phạm vi hiện tại: đăng nhập GitHub, tạo hồ sơ Firestore nếu chưa có và mở Home với danh sách dự án GitHub. `lib/features/` được giữ nguyên, chưa nối vào luồng này.
