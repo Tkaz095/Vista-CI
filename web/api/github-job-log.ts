@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { ApiError, authenticate, failure, githubRead, publicOwnedRepo } from '../server/githubAuth'
+import { ApiError, authenticate, failure, githubRead, publicOwnedRepo } from '../server/githubAuth.js'
 
 // Read a GitHub job log after verifying Firebase identity; GitHub tokens stay server-side.
 // Never forward that credential to the signed storage URL or accept arbitrary URLs.

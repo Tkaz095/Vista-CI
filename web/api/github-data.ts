@@ -6,7 +6,7 @@ import {
   githubRead,
   json,
   publicOwnedRepo,
-} from '../server/githubAuth'
+} from '../server/githubAuth.js'
 export default async function githubData(req: IncomingMessage, res: ServerResponse) {
   try {
     if (req.method !== 'GET')

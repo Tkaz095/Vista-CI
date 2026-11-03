@@ -10,7 +10,7 @@ import {
   startMobileOAuth,
   openMobileOAuth,
   mobileOAuthResult,
-} from '../server/githubAuth'
+} from '../server/githubAuth.js'
 export default async function githubSession(req: IncomingMessage, res: ServerResponse) {
   try {
     const url = new URL(req.url ?? '/', 'http://localhost'),
