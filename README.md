@@ -8,9 +8,11 @@ Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hi�
 
 - `mobile/` — Flutter mobile app
 - `web/` — React + TypeScript dashboard powered by Vite
+- `functions/` — Firebase HTTPS backend (Node.js 22), OAuth/vault và GitHub API
+- `firebase.json` — Functions, Hosting và cấu hình emulator
 - `.github/workflows/` — GitHub Actions workflows
 
-Both clients connect to Firebase project `vista-ci`. GitHub sign-in, account linking and automatic user-profile creation are implemented. Personal workspace CRUD uses ownerUid. GitHub repository discovery uses the OAuth token in session memory; users can select repositories and manage workspace links. See [implementation and Firebase setup](docs/project/17-workspace-crud-github.md).
+Both clients connect to Firebase project `vista-ci`. Firebase Auth handles sign-in; Firestore stores profiles, workspaces and encrypted GitHub credentials. Cloud Functions handles OAuth, refresh and GitHub API access. The web app uses Firebase Hosting rewrites and mobile defaults to `https://vista-ci.web.app`. See [current deployment guide](docs/project/25-firebase-functions.md); secrets/callback/deployment still require user action.
 
 Publish [Firestore Rules](firebase/firestore.rules) manually using the Firebase Console. Local code changes do not update the deployed Rules. See [user-only access and troubleshooting](docs/project/15-user-only.md). End-to-end GitHub/profile/workspace access and the new ownerUid Rules still need user confirmation after publishing.
 
@@ -44,6 +46,8 @@ npm install
 npm run dev
 ```
 
+Vite now proxies `/api` to the Firebase Functions emulator; it does not run the backend itself. For cloud deploy, follow [step 25](docs/project/25-firebase-functions.md). Build/test backend locally with `npm test --prefix functions` from the repo root.
+
 Màn CI/CD riêng, bộ lọc và quyền GitHub: [Bước 18](docs/project/18-cicd-screen.md). Không cần chỉnh Firebase cho bước đọc CI/CD.
 
-Luồng web và Flutter dùng backend GitHub chung, quản lý connection và job/step/log: [Bước22](docs/project/22-complete-workspace-cicd-mobile.md). Cần cấu hình callback/env/IAM theo bước21 trước khi dùng API thật; APK biên dịch thành công không thay cho kiểm tra OAuth/điện thoại.
+Luồng web và Flutter dùng backend GitHub chung, quản lý connection và job/step/log. [Bước22](docs/project/22-complete-workspace-cicd-mobile.md) là mốc lịch sử; cấu hình backend hiện tại theo [bước25](docs/project/25-firebase-functions.md). APK biên dịch thành công không thay cho kiểm tra OAuth/điện thoại.

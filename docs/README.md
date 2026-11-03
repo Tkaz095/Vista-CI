@@ -10,6 +10,8 @@ Bộ tài liệu này kế thừa có chọn lọc 4 gói SAGA đã cung cấp. 
 
 ## Đọc theo thứ tự
 
+**Hiện hành: [25. Firebase Cloud Functions và Hosting](project/25-firebase-functions.md).** Backend đã chuyển khỏi Vite/Vercel trong source; web/mobile dùng Firebase Hosting + HTTPS Functions. Cần người dùng nhập secret, cấu hình callback và deploy Blaze trước khi dùng cloud. Tài liệu 21–24 giữ làm lịch sử.
+
 **Mới nhất: [24. Tự gia hạn và lỗi quyền tải log](project/24-refresh-and-log-permission-diagnosis.md).** Đọc trực tiếp xác nhận runs/jobs hoạt động, log bị403 quyền; sửa cooldown sai, single-flight refresh và phân loại OAuth error. Chưa xác minh rotation khi token hết hạn thật.
 
 **Mới nhất: [23. Tự cập nhật CI/CD và cấu hình backend](project/23-auto-update-and-backend-setup.md).** Web tự cập nhật run/job/step; hướng dẫn sửa lỗi thiếu FIREBASE_PROJECT_ID và các biến server. Không cần logout/login để sửa lỗi setup.

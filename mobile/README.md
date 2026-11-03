@@ -104,3 +104,7 @@ Do not put API keys or other secrets in `core/constants/`; use platform configur
 ## Backend GitHub chung với web
 
 Xem `../docs/project/22-complete-workspace-cicd-mobile.md`. Cấu hình server theo bước21; trong app Tài khoản nhập URL backend và kết nối GitHub bằng trình duyệt một lần. Local dùng adb reverse port5173 và http://localhost:5173; Vercel dùng HTTPS, không cần reverse. SharedPreferences mới cần cold restart. Không đặt GitHub token/Client Secret trong app.
+
+## Backend hiện tại: Firebase
+
+Theo [bước 25](../docs/project/25-firebase-functions.md), backend đã chuyển sang Cloud Functions + Firebase Hosting. Origin mặc định là `https://vista-ci.web.app`, không cần Vite hoặc ADB reverse sau khi người dùng deploy. Nếu app còn URL tùy chỉnh, vào Tài khoản và lưu origin Firebase. Các hướng dẫn Vercel/local phía trên là lịch sử. SHA-1 Firebase vẫn cần đúng chứng chỉ ký APK cho đăng nhập native.

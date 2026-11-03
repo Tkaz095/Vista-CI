@@ -38,7 +38,7 @@ export function describeFailure(cause: unknown) {
       cause instanceof DOMException && cause.name === 'AbortError'
         ? 'Hết thời gian chờ backend. Thử lại.'
         : cause instanceof TypeError
-          ? 'Không kết nối được backend Vista. Kiểm tra mạng và Vite/Vercel.'
+          ? 'Không kết nối được backend Vista. Kiểm tra mạng và trạng thái Firebase Functions.'
           : cause instanceof Error
             ? cause.message
             : 'Không tải được CI/CD.',

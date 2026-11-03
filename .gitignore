@@ -18,6 +18,14 @@ web/.env*
 # Local Vite env files accidentally created under source must never be committed.
 web/src/.env
 
+# Firebase Functions generated files and local settings
+functions/node_modules/
+functions/lib/
+functions/.env*
+!functions/.env.example
+functions/.secret.local*
+!functions/.secret.local.example
+
 # Firebase Admin SDK credentials
 **/*service-account*.json
 **/*serviceAccount*.json

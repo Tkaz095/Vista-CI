@@ -55,3 +55,7 @@ Web đã chuyển sang backend OAuth/vault/refresh, còn chờ cấu hình và n
 ## Bước22 — Flutter dùng backend chung
 
 BackendClient gửi Firebase ID token, từ chối redirect và URL HTTP ngoài loopback debug. GitHubRepository gọi repos/runs/jobs/log/connection, không giữ GitHub token. BackendPanel cấu hình URL + quản lý kết nối. Browser OAuth dùng ticket một lần và polling request có UID; không đưa secret vào app. WorkspaceScreen thêm repo tại chỗ, mở đúng CI, lưu metadata navigation theo UID; RunDetailViewModel/JobLogViewModel đọc job/step/log đúng attempt, bỏ callback sau dispose. GitHubViewModel có generation reset khi đổi backend/kết nối. SharedPreferences chỉ lưu URL/navigation, không credential. Android HTTP loopback chỉ ở debug manifest. Xem tài liệu22 và checklist thật; chưa chứng minh runtime trên điện thoại vì ADB chưa thấy device ở lúc kiểm tra.
+
+## Cập nhật 03/11/2026: Firebase Functions
+
+Backend chuyển sang `functions/src`, Hosting rewrite `/api/**`, mobile dùng mặc định `https://vista-ci.web.app`. URL localhost:5173/vista-ci.vercel.app đã lưu được migrate một lần, giữ URL tùy chỉnh khác. Quy trình secret/callback/deploy và tiêu chí nghiệm thu ở [bước25](project/25-firebase-functions.md). Chưa xác nhận cloud end-to-end cho tới khi người dùng deploy; SHA-1 signing vẫn độc lập với backend migration.

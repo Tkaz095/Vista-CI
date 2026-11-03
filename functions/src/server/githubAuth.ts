@@ -7,9 +7,10 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app'
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore'
+import { appOrigin, githubClientId, githubClientSecret, tokenEncryptionKey } from '../settings.js'
 
 export class ApiError extends Error {
   readonly status: number
@@ -22,18 +23,18 @@ export class ApiError extends Error {
     this.retryAt = retryAt
   }
 }
-function required(name: string) {
-  const value = process.env[name]?.trim()
+function required(name: string, configured: string) {
+  const value = configured.trim()
   if (!value)
     throw new ApiError(
       503,
       'SERVER_SETUP_REQUIRED',
-      `Backend chưa cấu hình ${name}. Xem hướng dẫn bước 21.`,
+      `Backend chưa cấu hình ${name}. Xem hướng dẫn Cloud Functions bước 25.`,
     )
   return value
 }
 export function config() {
-  const origin = new URL(required('VISTA_APP_ORIGIN'))
+  const origin = new URL(required('VISTA_APP_ORIGIN', appOrigin.value()))
   if (
     origin.origin !== origin.href.replace(/\/$/, '') ||
     (origin.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(origin.hostname))
@@ -43,7 +44,7 @@ export function config() {
       'SERVER_SETUP_REQUIRED',
       'VISTA_APP_ORIGIN phải là origin HTTPS, hoặc localhost khi chạy local.',
     )
-  const key = Buffer.from(required('GITHUB_TOKEN_ENCRYPTION_KEY'), 'base64')
+  const key = Buffer.from(required('GITHUB_TOKEN_ENCRYPTION_KEY', tokenEncryptionKey.value()), 'base64')
   if (key.length !== 32)
     throw new ApiError(
       503,
@@ -53,34 +54,17 @@ export function config() {
   return {
     origin: origin.origin,
     key,
-    clientId: required('GITHUB_CLIENT_ID'),
-    clientSecret: required('GITHUB_CLIENT_SECRET'),
+    clientId: required('GITHUB_CLIENT_ID', githubClientId.value()),
+    clientSecret: required('GITHUB_CLIENT_SECRET', githubClientSecret.value()),
     callback: `${origin.origin}/api/github-session?action=callback`,
   }
 }
 function admin() {
   const name = 'vista-backend'
-  const projectId = required('FIREBASE_PROJECT_ID')
   let app = getApps().find((item) => item.name === name)
   if (!app) {
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey = process.env.FIREBASE_PRIVATE_KEY
-    if (!!clientEmail !== !!privateKey)
-      throw new ApiError(
-        503,
-        'SERVER_SETUP_REQUIRED',
-        'Cấu hình đầy đủ FIREBASE_CLIENT_EMAIL và FIREBASE_PRIVATE_KEY hoặc dùng Application Default Credentials.',
-      )
-    app = initializeApp(
-      {
-        projectId,
-        credential:
-          clientEmail && privateKey
-            ? cert({ projectId, clientEmail, privateKey: privateKey.replace(/\\n/g, '\n') })
-            : applicationDefault(),
-      },
-      name,
-    )
+    // Functions provides project identity and credentials automatically.
+    app = initializeApp({ credential: applicationDefault() }, name)
   }
   return app
 }
@@ -305,7 +289,8 @@ interface OAuthState {
   verifier: string
   createdAt: number
 }
-const cookieName = 'vista_github_oauth'
+// Firebase Hosting forwards only this specially named cookie to Functions.
+const cookieName = '__session'
 function stateCookie(value: string, maxAge: number) {
   return `${cookieName}=${value}; Path=/api/github-session; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${config().origin.startsWith('https:') ? '; Secure' : ''}`
 }

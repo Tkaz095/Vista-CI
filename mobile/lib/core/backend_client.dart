@@ -15,9 +15,30 @@ class BackendException implements Exception {
 
 class BackendClient {
   static const _key = 'vista.backend.origin';
-  static const _defined = String.fromEnvironment('VISTA_BACKEND_URL');
-  static Future<String> origin() async =>
-      (await SharedPreferences.getInstance()).getString(_key) ?? _defined;
+  static const _migrationKey = 'vista.backend.firebase.v1';
+  static const _defined = String.fromEnvironment(
+    'VISTA_BACKEND_URL',
+    defaultValue: 'https://vista-ci.web.app',
+  );
+  static Future<String> origin() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (preferences.getBool(_migrationKey) != true) {
+      final saved = preferences.getString(_key)?.trim();
+      // Migrate the previous local/Vercel default once; keep custom servers.
+      if (saved == null ||
+          saved.isEmpty ||
+          const {
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://vista-ci.vercel.app',
+          }.contains(saved.replaceFirst(RegExp(r'/$'), ''))) {
+        await preferences.remove(_key);
+      }
+      await preferences.setBool(_migrationKey, true);
+    }
+    return preferences.getString(_key) ?? _defined;
+  }
+
   static Future<void> saveOrigin(String value) async {
     validateOrigin(value);
     await (await SharedPreferences.getInstance()).setString(
@@ -40,7 +61,7 @@ class BackendClient {
                 ['localhost', '127.0.0.1'].contains(uri.host))) {
       throw BackendException(
         'BACKEND_SETUP',
-        'Nhập origin HTTPS của backend Vista. Debug local dùng http://localhost:5173 và adb reverse.',
+        'Nhập URL backend Firebase https://vista-ci.web.app. Debug local mới dùng localhost và adb reverse.',
       );
     }
     return uri;
@@ -83,7 +104,7 @@ class BackendClient {
     } on http.ClientException {
       throw BackendException(
         'BACKEND_NETWORK',
-        'Không kết nối được backend Vista. Kiểm tra URL, mạng hoặc adb reverse khi chạy local.',
+        'Không kết nối được backend Firebase Vista. Kiểm tra URL, mạng và trạng thái deploy Functions.',
       );
     } finally {
       client.close();

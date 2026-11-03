@@ -112,7 +112,7 @@ class _BackendPanelState extends State<BackendPanel> {
             enabled: !busy,
             decoration: const InputDecoration(
               labelText: 'URL backend Vista',
-              hintText: 'https://ten-du-an.vercel.app',
+              hintText: 'https://vista-ci.web.app',
             ),
             keyboardType: TextInputType.url,
           ),
