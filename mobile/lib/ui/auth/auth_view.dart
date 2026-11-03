@@ -14,7 +14,11 @@ class AuthView extends StatelessWidget {
     builder: (context, _) {
       final profile = viewModel.profile;
       if (profile == null) return LoginView(viewModel: viewModel);
-      return HomeView(profile: profile, viewModel: viewModel);
+      return HomeView(
+        key: ValueKey(profile.uid),
+        profile: profile,
+        viewModel: viewModel,
+      );
     },
   );
 }
@@ -64,6 +68,11 @@ class LoginView extends StatelessWidget {
                 ),
               const SizedBox(height: 20),
               const Text('Vista tự tạo hồ sơ khi bạn đăng nhập lần đầu.'),
+              const SizedBox(height: 12),
+              const Text(
+                'Để hiển thị cả repo riêng tư, GitHub sẽ yêu cầu quyền repo '
+                '(gồm đọc và ghi). Vista hiện chỉ đọc danh sách repo.',
+              ),
             ],
           ),
         ),

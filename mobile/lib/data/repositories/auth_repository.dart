@@ -6,6 +6,8 @@ class AuthRepository {
   final FirebaseAuthService _auth = FirebaseAuthService();
   final FirestoreProfileService _profiles = FirestoreProfileService();
 
+  String? get githubAccessToken => _auth.githubAccessToken;
+
   Future<UserProfile> signInWithGitHub() async {
     final identity = await _auth.signInWithGitHub();
     final name = identity.displayName.trim();

@@ -13,6 +13,8 @@ class AuthViewModel extends ChangeNotifier {
   String actionMessage = '';
   bool _disposed = false;
 
+  String? get githubAccessToken => _repository.githubAccessToken;
+
   Future<void> signInWithGitHub() => _run(() async {
     final user = await _repository.signInWithGitHub();
     if (!_disposed) profile = user;

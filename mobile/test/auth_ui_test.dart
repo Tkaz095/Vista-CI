@@ -21,6 +21,9 @@ const testProfile = UserProfile(
 
 // UI tests replace the repository, without adding test options to production services.
 class FakeAuthRepository implements AuthRepository {
+  @override
+  String? get githubAccessToken => null;
+
   Completer<UserProfile>? result;
   Object? signOutError;
   int signInCalls = 0;
@@ -160,6 +163,31 @@ void main() {
     repository.result!.complete(testProfile);
     await request;
     expect(pendingModel.profile, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Home remains usable on a narrow screen with large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await model.signInWithGitHub();
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.8)),
+          child: child!,
+        ),
+        home: AuthView(viewModel: model),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Đăng xuất'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đăng nhập Vista'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

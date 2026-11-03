@@ -54,6 +54,26 @@ service cloud.firestore {
         && request.resource.data.role == 'user'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
       allow delete: if false;
+      match /projects/{projectId} {
+        function isOwner() {
+          return activeUser() && request.auth.uid == userId;
+        }
+        function validProject() {
+          return request.resource.data.keys().hasAll(['name', 'description', 'repositories', 'createdAt', 'updatedAt'])
+            && request.resource.data.keys().hasOnly(['name', 'description', 'repositories', 'createdAt', 'updatedAt'])
+            && text(request.resource.data.name, 1, 100)
+            && text(request.resource.data.description, 0, 1000)
+            && request.resource.data.repositories is list
+            && request.resource.data.repositories.size() <= 50;
+        }
+        allow read, delete: if isOwner();
+        allow create: if isOwner() && validProject()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+        allow update: if isOwner() && validProject()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'repositories', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time;
+      }
     }
     match /workspaces/{workspaceId} {
       allow read: if activeUser() && resource.data.ownerUid == request.auth.uid;
