@@ -53,17 +53,7 @@ class _HomeViewState extends State<HomeView> {
         }
       },
       child: Scaffold(
-        appBar: AppHeader(
-          actions: [
-            IconButton(
-              tooltip: 'Đăng xuất',
-              onPressed: widget.viewModel.busy
-                  ? null
-                  : widget.viewModel.signOut,
-              icon: const Icon(Icons.logout),
-            ),
-          ],
-        ),
+        appBar: const AppHeader(),
         bottomNavigationBar: AppBottomTab(
           selectedTab: selectedTab,
           onSelected: (tab) {
@@ -84,9 +74,13 @@ class _HomeViewState extends State<HomeView> {
                 child: IndexedStack(
                   index: selectedTab.index,
                   children: [
-                    ProjectsView(viewModel: projects, profile: widget.profile),
+                    ProjectsView(viewModel: projects),
                     const ActionView(),
-                    const ProfileView(),
+                    ProfileView(
+                      profile: widget.profile,
+                      isSigningOut: widget.viewModel.busy,
+                      onSignOut: widget.viewModel.signOut,
+                    ),
                   ],
                 ),
               ),

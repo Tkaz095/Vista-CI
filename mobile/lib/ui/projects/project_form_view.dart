@@ -4,11 +4,12 @@ import '../../data/models/project.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_chip.dart';
-import '../widgets/app_empty_state.dart';
 import '../widgets/app_message.dart';
+import '../widgets/app_loading.dart';
 import '../widgets/app_stack_header.dart';
 import '../widgets/app_text_field.dart';
 import 'projects_view_model.dart';
+import 'select_repositories_view.dart';
 
 class ProjectFormView extends StatefulWidget {
   const ProjectFormView({super.key, required this.viewModel, this.project});
@@ -32,9 +33,6 @@ class _ProjectFormViewState extends State<ProjectFormView> {
       text: widget.project?.description ?? '',
     );
     widget.viewModel.startEditing(widget.project);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.viewModel.loadGitHubRepositories();
-    });
   }
 
   @override
@@ -44,7 +42,19 @@ class _ProjectFormViewState extends State<ProjectFormView> {
     super.dispose();
   }
 
+  Future<void> _chooseRepositories() async {
+    FocusScope.of(context).unfocus();
+    widget.viewModel.setRepositorySearch('');
+    widget.viewModel.loadGitHubRepositories();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SelectRepositoriesView(viewModel: widget.viewModel),
+      ),
+    );
+  }
+
   Future<void> _saveProject() async {
+    FocusScope.of(context).unfocus();
     if (!formKey.currentState!.validate()) return;
     final saved = await widget.viewModel.saveProject(
       project: widget.project,
@@ -59,7 +69,6 @@ class _ProjectFormViewState extends State<ProjectFormView> {
     listenable: widget.viewModel,
     builder: (context, _) {
       final model = widget.viewModel;
-      final repos = model.visibleRepositories;
       final selectedIds = model.selectedRepositories
           .map((repo) => repo.id)
           .toSet();
@@ -71,71 +80,34 @@ class _ProjectFormViewState extends State<ProjectFormView> {
             title: widget.project == null ? 'Tạo project' : 'Chỉnh sửa project',
             canGoBack: !model.saving,
           ),
-          body: SafeArea(
-            child: Form(
-              key: formKey,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(AppSpacing.page),
-                itemCount: repos.length + 1,
-                itemBuilder: (context, index) {
-                  if (index > 0) {
-                    final repo = repos[index - 1];
-                    final selected = selectedIds.contains(repo.id);
-                    final canSelect =
-                        selected ||
-                        selectedIds.length < Project.maxRepositories;
-                    return CheckboxListTile(
-                      key: ValueKey(repo.id),
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(repo.fullName),
-                      subtitle: Text(
-                        [
-                          repo.isPrivate ? 'Riêng tư' : 'Công khai',
-                          if (repo.language.isNotEmpty) repo.language,
-                        ].join(' · '),
-                      ),
-                      value: selected,
-                      onChanged:
-                          model.saving ||
-                              model.loadingRepositories ||
-                              !canSelect
-                          ? null
-                          : (_) => model.toggleRepository(repo),
-                    );
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    AppSpacing.control,
+                    AppSpacing.page,
+                    AppSpacing.medium,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AppTextField(
-                        label: 'Tên project',
-                        controller: nameController,
-                        enabled: !model.saving,
-                        maxLength: Project.maxNameLength,
-                        validator: (value) {
-                          final name = value?.trim() ?? '';
-                          if (name.isEmpty) return 'Nhập tên project.';
-                          if (name.length > Project.maxNameLength) {
-                            return 'Tên project quá dài.';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        label: 'Mô tả (không bắt buộc)',
-                        controller: descriptionController,
-                        enabled: !model.saving,
-                        maxLength: Project.maxDescriptionLength,
-                        minLines: 2,
-                        maxLines: 4,
-                        validator: (value) =>
-                            (value?.trim().length ?? 0) >
-                                Project.maxDescriptionLength
-                            ? 'Mô tả quá dài.'
-                            : null,
-                      ),
-                      const SizedBox(height: 20),
+                      if (model.saveError.isNotEmpty) ...[
+                        AppMessage(message: model.saveError),
+                        const SizedBox(height: AppSpacing.control),
+                      ],
                       AppButton(
                         label: 'Lưu project',
                         loadingLabel: 'Đang lưu…',
@@ -143,82 +115,127 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                         onPressed: model.loadingProjects ? null : _saveProject,
                         icon: Icons.save_outlined,
                       ),
-                      if (model.saveError.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        AppMessage(message: model.saveError),
-                      ],
-                      const SizedBox(height: AppSpacing.section),
-                      Text(
-                        'Repo đã chọn (${selectedIds.length}/${Project.maxRepositories})',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Bạn có thể lưu project rỗng và thêm repo sau.',
-                      ),
-                      if (model.selectedRepositories.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final repo in model.selectedRepositories)
-                              AppChip(
-                                label: repo.fullName,
-                                onDeleted: model.saving
-                                    ? null
-                                    : () => model.removeRepository(repo.id),
-                              ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            'Chọn repo từ GitHub',
-                            style: theme.textTheme.titleMedium,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          body: SafeArea(
+            child: Form(
+              key: formKey,
+              child: RefreshIndicator(
+                onRefresh: model.loadGitHubRepositories,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppSpacing.page),
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/logo/logo.png',
+                            height: 56,
+                            cacheHeight: 224,
+                            excludeFromSemantics: true,
                           ),
-                          AppButton(
-                            label: 'Đồng bộ repo',
-                            loadingLabel: 'Đang đồng bộ…',
-                            variant: AppButtonVariant.text,
-                            isLoading: model.loadingRepositories,
-                            onPressed: model.saving
-                                ? null
-                                : model.loadGitHubRepositories,
-                            icon: Icons.sync,
+                        ),
+                        const SizedBox(height: AppSpacing.page),
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            widget.project == null
+                                ? 'Đặt tên project'
+                                : 'Chỉnh sửa project',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineMedium,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.control),
+                        Text(
+                          'Đặt tên và chọn các repository bạn muốn quản lý cùng nhau.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.section),
+                        AppTextField(
+                          label: 'Tên project',
+                          hint: 'Ví dụ: Mobile CI Platform',
+                          helperText: 'Dùng tên giúp bạn dễ nhận diện project.',
+                          controller: nameController,
+                          enabled: !model.saving,
+                          maxLength: Project.maxNameLength,
+                          validator: (value) {
+                            final name = value?.trim() ?? '';
+                            if (name.isEmpty) return 'Nhập tên project.';
+                            if (name.length > Project.maxNameLength) {
+                              return 'Tên project quá dài.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'Mô tả (không bắt buộc)',
+                          hint: 'Project này dành cho việc gì?',
+                          controller: descriptionController,
+                          enabled: !model.saving,
+                          maxLength: Project.maxDescriptionLength,
+                          minLines: 2,
+                          maxLines: 4,
+                          validator: (value) =>
+                              (value?.trim().length ?? 0) >
+                                  Project.maxDescriptionLength
+                              ? 'Mô tả quá dài.'
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.section),
+                        Text(
+                          'Repo đã chọn (${selectedIds.length}/${Project.maxRepositories})',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Bạn có thể lưu project rỗng và thêm repo sau.',
+                        ),
+                        if (model.selectedRepositories.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final repo in model.selectedRepositories)
+                                AppChip(
+                                  label: repo.fullName,
+                                  onDeleted: model.saving
+                                      ? null
+                                      : () => model.removeRepository(repo.id),
+                                ),
+                            ],
                           ),
                         ],
-                      ),
-                      AppTextField(
-                        label: 'Tìm repo',
-                        prefixIcon: Icons.search,
-                        initialValue: model.repositorySearch,
-                        onChanged: model.setRepositorySearch,
-                      ),
-                      const SizedBox(height: 12),
-                      if (model.loadingRepositories)
-                        const LinearProgressIndicator(
-                          semanticsLabel: 'Đang tải repo GitHub',
+                        const SizedBox(height: AppSpacing.page),
+                        AppButton(
+                          label: 'Chọn repository',
+                          onPressed: model.saving ? null : _chooseRepositories,
+                          icon: Icons.checklist_outlined,
+                          variant: AppButtonVariant.secondary,
                         ),
-                      if (model.repositoryError.isNotEmpty)
-                        AppMessage(message: model.repositoryError),
-                      if (!model.loadingRepositories &&
-                          model.repositoryError.isEmpty &&
-                          repos.isEmpty)
-                        AppEmptyState(
-                          message: model.repositorySearch.trim().isEmpty
-                              ? 'GitHub chưa trả về repo nào.'
-                              : 'Không tìm thấy repo phù hợp.',
-                        ),
-                      const SizedBox(height: 12),
-                    ],
-                  );
-                },
+                        const SizedBox(height: AppSpacing.medium),
+                        if (model.loadingRepositories)
+                          const AppLoading(
+                            label: 'Đang cập nhật repository…',
+                            compact: true,
+                          ),
+                        if (model.repositoryError.isNotEmpty)
+                          AppMessage(message: model.repositoryError),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

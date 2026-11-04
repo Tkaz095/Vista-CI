@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/project.dart';
-import '../../data/models/user_profile.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_button.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_message.dart';
-import '../widgets/app_stack_header.dart';
+import 'project_detail_view.dart';
 import '../widgets/app_text_field.dart';
 import 'project_form_view.dart';
 import 'projects_view_model.dart';
 
 class ProjectsView extends StatelessWidget {
-  const ProjectsView({
-    super.key,
-    required this.viewModel,
-    required this.profile,
-  });
+  const ProjectsView({super.key, required this.viewModel});
 
   final ProjectsViewModel viewModel;
-  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -41,29 +33,17 @@ class ProjectsView extends StatelessWidget {
           itemBuilder: (context, index) {
             if (index == 0) return _header(context, projects.isEmpty);
             final project = projects[index - 1];
-            return Column(
-              children: [
-                const Divider(height: 1),
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  title: Text(project.name),
-                  subtitle: Text(
-                    [
-                      if (project.description.isNotEmpty) project.description,
-                      '${project.repositories.length} repo',
-                    ].join('\n'),
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => _ProjectDetailsView(
-                        projectId: project.id,
-                        viewModel: viewModel,
-                      ),
-                    ),
+            return _ProjectCard(
+              key: ValueKey(project.id),
+              project: project,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ProjectDetailView(
+                    projectId: project.id,
+                    viewModel: viewModel,
                   ),
                 ),
-              ],
+              ),
             );
           },
         ),
@@ -73,25 +53,48 @@ class ProjectsView extends StatelessWidget {
 
   Widget _header(BuildContext context, bool empty) {
     final theme = Theme.of(context);
-    final name = profile.displayName.isEmpty
-        ? 'Vista User'
-        : profile.displayName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Xin chào, $name', style: theme.textTheme.titleMedium),
-        if (profile.email.isNotEmpty) Text(profile.email),
-        const SizedBox(height: AppSpacing.section),
-        Text('Project của bạn', style: theme.textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        const Text('Nhóm các repo GitHub theo từng project.'),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
+        AppTextField(
+          label: 'Tìm project',
+          hint: 'Tên hoặc mô tả project…',
+          prefixIcon: Icons.search,
+          initialValue: viewModel.projectSearch,
+          onChanged: viewModel.setProjectSearch,
+        ),
+        const SizedBox(height: AppSpacing.page),
+        Row(
           children: [
-            AppButton(
-              label: 'Tạo project',
+            Expanded(
+              child: Wrap(
+                spacing: AppSpacing.small,
+                runSpacing: AppSpacing.small,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text('Project của bạn', style: theme.textTheme.headlineSmall),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.control,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Text(
+                      '${viewModel.visibleProjects.length}',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.small),
+            IconButton.filled(
+              tooltip: 'Tạo project',
               onPressed: viewModel.saving || viewModel.loadingProjects
                   ? null
                   : () => Navigator.of(context).push(
@@ -99,24 +102,20 @@ class ProjectsView extends StatelessWidget {
                         builder: (_) => ProjectFormView(viewModel: viewModel),
                       ),
                     ),
-              icon: Icons.add,
-            ),
-            AppButton(
-              label: 'Tải lại',
-              loadingLabel: 'Đang tải…',
-              variant: AppButtonVariant.secondary,
-              isLoading: viewModel.loadingProjects,
-              onPressed: viewModel.saving ? null : viewModel.loadProjects,
-              icon: Icons.refresh,
+              icon: const Icon(Icons.add),
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        AppTextField(
-          label: 'Tìm project',
-          prefixIcon: Icons.search,
-          initialValue: viewModel.projectSearch,
-          onChanged: viewModel.setProjectSearch,
+        const SizedBox(height: AppSpacing.small),
+        Text(
+          'Nhóm các repo GitHub theo từng project.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         if (viewModel.loadingProjects) ...[
           const SizedBox(height: 20),
@@ -142,167 +141,75 @@ class ProjectsView extends StatelessWidget {
   }
 }
 
-class _ProjectDetailsView extends StatelessWidget {
-  const _ProjectDetailsView({required this.projectId, required this.viewModel});
-  final String projectId;
-  final ProjectsViewModel viewModel;
+class _ProjectCard extends StatefulWidget {
+  const _ProjectCard({super.key, required this.project, required this.onTap});
 
-  Future<void> _deleteProject(BuildContext context, Project project) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa project?'),
-        content: Text(
-          'Xóa “${project.name}” khỏi Vista? Các repo trên GitHub vẫn được giữ.',
-        ),
-        actions: [
-          AppButton(
-            label: 'Giữ lại',
-            variant: AppButtonVariant.text,
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          AppButton(
-            label: 'Xóa project',
-            variant: AppButtonVariant.danger,
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-    final deleted = await viewModel.deleteProject(project);
-    if (deleted && context.mounted) Navigator.of(context).pop();
-  }
-
-  Future<void> _openRepo(BuildContext context, ProjectRepo repo) async {
-    try {
-      if (await launchUrl(
-        repo.githubUrl,
-        mode: LaunchMode.externalApplication,
-      )) {
-        return;
-      }
-    } catch (_) {
-      // Show one readable message whether the browser returns false or throws.
-    }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chưa mở được GitHub. Hãy thử lại.')),
-      );
-    }
-  }
+  final Project project;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: viewModel,
-    builder: (context, _) {
-      final matches = viewModel.projects.where(
-        (project) => project.id == projectId,
-      );
-      final project = matches.isEmpty ? null : matches.first;
-      return PopScope(
-        canPop: !viewModel.saving,
-        child: Scaffold(
-          appBar: AppStackHeader(
-            title: 'Chi tiết project',
-            canGoBack: !viewModel.saving,
-          ),
-          body: SafeArea(
-            child: project == null
-                ? const Padding(
-                    padding: EdgeInsets.all(AppSpacing.page),
-                    child: AppEmptyState(
-                      message: 'Project không còn trong danh sách.',
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.all(AppSpacing.page),
-                    children: [
-                      Text(
-                        project.name,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      if (project.description.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Text(project.description),
-                      ],
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          AppButton(
-                            label: 'Chỉnh sửa',
-                            onPressed:
-                                viewModel.saving || viewModel.loadingProjects
-                                ? null
-                                : () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => ProjectFormView(
-                                        viewModel: viewModel,
-                                        project: project,
-                                      ),
-                                    ),
-                                  ),
-                            icon: Icons.edit_outlined,
-                          ),
-                          AppButton(
-                            label: 'Xóa project',
-                            loadingLabel: 'Đang xóa…',
-                            isLoading: viewModel.saving,
-                            variant: AppButtonVariant.danger,
-                            onPressed: viewModel.loadingProjects
-                                ? null
-                                : () => _deleteProject(context, project),
-                            icon: Icons.delete_outline,
-                          ),
-                        ],
-                      ),
-                      if (viewModel.saveError.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        AppMessage(message: viewModel.saveError),
-                      ],
-                      if (viewModel.projectError.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        AppMessage(
-                          message: viewModel.projectError,
-                          type: AppMessageType.warning,
-                        ),
-                        AppButton(
-                          label: 'Tải lại project',
-                          loadingLabel: 'Đang tải…',
-                          variant: AppButtonVariant.text,
-                          isLoading: viewModel.loadingProjects,
-                          onPressed: viewModel.saving
-                              ? null
-                              : viewModel.loadProjects,
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.section),
-                      Text(
-                        'Repo trong project (${project.repositories.length})',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      if (project.repositories.isEmpty)
-                        const AppEmptyState(
-                          message:
-                              'Project chưa có repo. Chọn “Chỉnh sửa” để thêm.',
-                        ),
-                      for (final repo in project.repositories) ...[
-                        const Divider(),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(repo.fullName),
-                          trailing: const Icon(Icons.open_in_new),
-                          onTap: () => _openRepo(context, repo),
-                        ),
-                      ],
-                    ],
-                  ),
-          ),
+  State<_ProjectCard> createState() => _ProjectCardState();
+}
+
+class _ProjectCardState extends State<_ProjectCard> {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final project = widget.project;
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.medium),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.all(AppSpacing.medium),
+              leading: Container(
+                padding: const EdgeInsets.all(AppSpacing.small),
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.folder_outlined, color: colors.primary),
+              ),
+              title: Text(project.name),
+              subtitle: Text('${project.repositories.length} repositories'),
+              trailing: IconButton(
+                tooltip: expanded ? 'Ẩn repository' : 'Xem repository',
+                onPressed: project.repositories.isEmpty
+                    ? null
+                    : () => setState(() => expanded = !expanded),
+                icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              ),
+            ),
+            if (expanded)
+              for (final repo in project.repositories) ...[
+                const Divider(height: 1),
+                _RepositoryRow(repo: repo),
+              ],
+          ],
         ),
-      );
-    },
+      ),
+    );
+  }
+}
+
+class _RepositoryRow extends StatelessWidget {
+  const _RepositoryRow({required this.repo});
+
+  final ProjectRepo repo;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.card,
+      vertical: AppSpacing.small,
+    ),
+    leading: const Icon(Icons.code, size: 20),
+    title: Text(repo.fullName),
+    titleTextStyle: Theme.of(context).textTheme.bodyMedium,
   );
 }

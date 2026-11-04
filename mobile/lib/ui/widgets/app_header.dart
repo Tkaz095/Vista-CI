@@ -25,14 +25,16 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     titleSpacing: AppSpacing.page,
     toolbarHeight: preferredSize.height,
     backgroundColor: Theme.of(context).colorScheme.surface,
+    shape: Border(
+      bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+    ),
     title: Image.asset(
-      'assets/logo/logo.png',
-      width: 96,
-      height: 64,
-      // The source has transparent margins. Cover keeps the logo readable here.
-      fit: BoxFit.cover,
-      alignment: const Alignment(0, -0.1),
-      cacheWidth: 384,
+      'assets/logo/logo-on-header.png',
+      width: 128,
+      height: 40,
+      fit: BoxFit.contain,
+      alignment: Alignment.centerLeft,
+      cacheWidth: 512,
       semanticLabel: 'Vista',
     ),
     actions: [

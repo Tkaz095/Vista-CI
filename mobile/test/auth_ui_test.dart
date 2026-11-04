@@ -85,11 +85,11 @@ void main() {
     expect(find.byType(HomeView), findsOneWidget);
     expect(find.byType(AppHeader), findsOneWidget);
     expect(find.byType(AppBottomTab), findsOneWidget);
-    expect(find.text(testProfile.email), findsOneWidget);
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Đăng xuất'));
+    await tester.scrollUntilVisible(find.text('Đăng xuất'), 120);
+    await tester.tap(find.text('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(repository.signOutCalls, 1);
     expect(find.byType(HomeView), findsNothing);
@@ -160,7 +160,8 @@ void main() {
     );
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Đăng xuất'));
+    await tester.scrollUntilVisible(find.text('Đăng xuất'), 120);
+    await tester.tap(find.text('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(find.byType(HomeView), findsOneWidget);
     expect(find.textContaining('Kiểm tra mạng'), findsOneWidget);
@@ -226,7 +227,8 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Đăng xuất'));
+    await tester.scrollUntilVisible(find.text('Đăng xuất'), 120);
+    await tester.tap(find.text('Đăng xuất'));
     await tester.pumpAndSettle();
     expect(find.text('Đăng nhập Vista'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -247,7 +249,7 @@ void main() {
 
     await tester.tap(find.text('Action'));
     await tester.pumpAndSettle();
-    expect(find.text('Action screen'), findsOneWidget);
+    expect(find.text('GitHub Actions'), findsOneWidget);
     expect(tester.testTextInput.isVisible, isFalse);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -262,7 +264,8 @@ void main() {
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    expect(find.text('Profile screen'), findsOneWidget);
+    expect(find.text('Tài khoản'), findsOneWidget);
+    expect(find.text(testProfile.email), findsOneWidget);
     expect(find.byType(AppHeader), findsOneWidget);
     expect(find.byType(AppBottomTab), findsOneWidget);
     expect(find.byType(AppStackHeader), findsNothing);
@@ -273,7 +276,7 @@ void main() {
       'vista',
     );
 
-    await tester.tap(find.text('Tạo project'));
+    await tester.tap(find.byTooltip('Tạo project'));
     await tester.pumpAndSettle();
     expect(find.byType(AppStackHeader), findsOneWidget);
     expect(find.byType(AppBottomTab), findsNothing);

@@ -132,6 +132,12 @@ class ProjectsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void restoreRepositorySelection(List<ProjectRepo> previous) {
+    if (_disposed || saving) return;
+    selectedRepositories = [...previous];
+    notifyListeners();
+  }
+
   Future<bool> saveProject({
     Project? project,
     required String name,

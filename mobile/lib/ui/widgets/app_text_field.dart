@@ -5,6 +5,7 @@ class AppTextField extends StatelessWidget {
     super.key,
     required this.label,
     this.hint,
+    this.helperText,
     this.controller,
     this.initialValue,
     this.onChanged,
@@ -21,6 +22,7 @@ class AppTextField extends StatelessWidget {
 
   final String label;
   final String? hint;
+  final String? helperText;
   // The screen that creates a controller also disposes it.
   final TextEditingController? controller;
   final String? initialValue;
@@ -30,7 +32,7 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final int? maxLength;
   final int minLines;
-  final int maxLines;
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) => TextFormField(
@@ -46,6 +48,8 @@ class AppTextField extends StatelessWidget {
     decoration: InputDecoration(
       labelText: label,
       hintText: hint,
+      helperText: helperText,
+      helperMaxLines: 3,
       prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
     ),
   );

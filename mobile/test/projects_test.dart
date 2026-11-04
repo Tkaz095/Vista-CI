@@ -382,18 +382,24 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: Scaffold(
-          body: ProjectsView(viewModel: model, profile: testProfile),
-        ),
+        home: Scaffold(body: ProjectsView(viewModel: model)),
       ),
     );
-    await tester.tap(find.text('Tạo project'));
+    await tester.tap(find.byTooltip('Tạo project'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lưu project'));
     await tester.pumpAndSettle();
     expect(find.text('Nhập tên project.'), findsOneWidget);
     expect(repository.writeCalls, 0);
     await tester.enterText(find.byType(TextFormField).first, 'Đồ án Flutter');
+    await tester.scrollUntilVisible(
+      find.text('Chọn repository'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chọn repository'));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Tìm repo'),
       180,
@@ -408,6 +414,9 @@ void main() {
     );
     await tester.tap(find.widgetWithText(CheckboxListTile, 'team/api'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Xác nhận lựa chọn'));
+    await tester.pumpAndSettle();
+
     await tester.scrollUntilVisible(
       find.text('Lưu project'),
       -180,
@@ -419,15 +428,22 @@ void main() {
     expect(find.text('Đồ án Flutter'), findsOneWidget);
     await tester.tap(find.text('Đồ án Flutter'));
     await tester.pumpAndSettle();
-    expect(find.text('team/api'), findsOneWidget);
+    expect(find.text('api'), findsOneWidget);
+    expect(find.byTooltip('team/api'), findsOneWidget);
+    expect(find.text('Chỉnh sửa'), findsNothing);
+    expect(find.text('Xóa project'), findsNothing);
+    await tester.tap(find.byTooltip('Thao tác project'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Chỉnh sửa'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Project mới');
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.byTooltip('Bỏ team/api'),
+      find.byType(InputChip),
       150,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Bỏ team/api'));
     await tester.scrollUntilVisible(
       find.text('Lưu project'),
@@ -437,12 +453,17 @@ void main() {
     await tester.tap(find.text('Lưu project'));
     await tester.pumpAndSettle();
     expect(find.text('Project mới'), findsOneWidget);
-    expect(find.text('Repo trong project (0)'), findsOneWidget);
+    expect(find.text('Repository đang theo dõi (0)'), findsOneWidget);
+    expect(find.text('0 repository'), findsNothing);
+    await tester.tap(find.byTooltip('Thao tác project'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Xóa project'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Giữ lại'));
     await tester.pumpAndSettle();
     expect(repository.savedProjects, hasLength(1));
+    await tester.tap(find.byTooltip('Thao tác project'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Xóa project'));
     await tester.pumpAndSettle();
     await tester.tap(
@@ -481,6 +502,102 @@ void main() {
     },
   );
 
+  testWidgets('Save stays above the keyboard and submits the form', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(viewInsets: const EdgeInsets.only(bottom: 240)),
+          child: child!,
+        ),
+        home: Scaffold(body: ProjectsView(viewModel: model)),
+      ),
+    );
+    await tester.tap(find.byTooltip('Tạo project'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Mobile');
+    await tester.pumpAndSettle();
+    final save = find.widgetWithText(FilledButton, 'Lưu project');
+    expect(tester.getBottomRight(save).dy, lessThanOrEqualTo(400));
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(repository.savedProjects.single.name, 'Mobile');
+    expect(find.byType(ProjectFormView), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Project repositories stay collapsed until explicitly expanded', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final project = Project(
+      id: 'long-project',
+      name: 'Dự án mobile cho nhóm phát triển ứng dụng',
+      description: 'Một mô tả dài của project.',
+      repositories: List.generate(
+        4,
+        (index) => ProjectRepo(
+          id: index + 1,
+          fullName: 'organization-with-a-long-name/repository-number-$index',
+        ),
+      ),
+    );
+    repository.savedProjects = [project];
+    await model.loadProjects();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1.8)),
+          child: child!,
+        ),
+        home: Scaffold(body: ProjectsView(viewModel: model)),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text(project.name),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(project.repositories.last.fullName), findsNothing);
+    expect(find.text(project.repositories.first.fullName), findsNothing);
+    await tester.ensureVisible(find.byTooltip('Xem repository'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Xem repository'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Ẩn repository'), findsOneWidget);
+    expect(find.text(project.repositories.last.fullName), findsOneWidget);
+    await tester.ensureVisible(find.byTooltip('Ẩn repository'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Ẩn repository'));
+    await tester.pumpAndSettle();
+    expect(find.text(project.repositories.first.fullName), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text(project.name));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(project.name));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Repository đang theo dõi (4)'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Repository đang theo dõi (4)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Form fits a narrow screen with large text and long repo names', (
     tester,
   ) async {
@@ -508,6 +625,15 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
+      find.text('Chọn repository'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chọn repository'));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
       find.byType(Checkbox),
       180,
       scrollable: find.byType(Scrollable).first,
@@ -517,6 +643,9 @@ void main() {
     await tester.ensureVisible(find.byType(Checkbox));
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Xác nhận lựa chọn'));
+    await tester.pumpAndSettle();
+
     await tester.scrollUntilVisible(
       find.byType(InputChip),
       -180,

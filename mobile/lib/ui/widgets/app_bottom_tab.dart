@@ -19,50 +19,55 @@ class AppBottomTab extends StatelessWidget {
     final colors = theme.colorScheme;
     // Let the bar grow with accessibility text instead of limiting text scaling.
     final extraHeight = MediaQuery.textScalerOf(context).scale(12) - 12;
-    return NavigationBarTheme(
-      data: NavigationBarThemeData(
-        backgroundColor: colors.surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        indicatorColor: colors.primaryContainer,
-        iconTheme: WidgetStateProperty.resolveWith(
-          (states) => IconThemeData(
-            size: 24,
-            color: states.contains(WidgetState.selected)
-                ? colors.primary
-                : colors.onSurfaceVariant,
-          ),
-        ),
-        labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => theme.textTheme.labelSmall?.copyWith(
-            color: states.contains(WidgetState.selected)
-                ? colors.primary
-                : colors.onSurfaceVariant,
-          ),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.outlineVariant)),
       ),
-      child: NavigationBar(
-        height: 64 + extraHeight.clamp(0, double.infinity) * 2,
-        selectedIndex: selectedTab.index,
-        onDestinationSelected: (index) => onSelected(AppTab.values[index]),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.folder_outlined),
-            selectedIcon: Icon(Icons.folder),
-            label: 'Projects',
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: colors.surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          indicatorColor: colors.primaryContainer,
+          iconTheme: WidgetStateProperty.resolveWith(
+            (states) => IconThemeData(
+              size: 24,
+              color: states.contains(WidgetState.selected)
+                  ? colors.primary
+                  : colors.onSurfaceVariant,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bolt_outlined),
-            selectedIcon: Icon(Icons.bolt),
-            label: 'Action',
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => theme.textTheme.labelSmall?.copyWith(
+              color: states.contains(WidgetState.selected)
+                  ? colors.primary
+                  : colors.onSurfaceVariant,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          height: 64 + extraHeight.clamp(0, double.infinity) * 2,
+          selectedIndex: selectedTab.index,
+          onDestinationSelected: (index) => onSelected(AppTab.values[index]),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.folder_outlined),
+              selectedIcon: Icon(Icons.folder),
+              label: 'Projects',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.bolt_outlined),
+              selectedIcon: Icon(Icons.bolt),
+              label: 'Action',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }

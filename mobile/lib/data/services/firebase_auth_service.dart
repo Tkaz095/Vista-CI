@@ -10,7 +10,9 @@ class FirebaseAuthService {
 
   Future<AuthIdentity> signInWithGitHub() async {
     _githubAccessToken = null;
-    final provider = GithubAuthProvider()..addScope('repo');
+    final provider = GithubAuthProvider()
+      ..addScope('repo')
+      ..setCustomParameters({'prompt': 'select_account'});
     final result = await _auth.signInWithProvider(provider);
     final user = result.user;
     if (user == null) throw StateError('Firebase returned no user');
