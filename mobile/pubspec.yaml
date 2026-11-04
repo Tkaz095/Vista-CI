@@ -40,6 +40,8 @@ dependencies:
   http: ^1.6.0
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.6
+  firebase_ai: ^5.1.0
+  firebase_app_check: ^0.5.1
 
 dev_dependencies:
   flutter_test:
@@ -51,6 +53,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  firebase_core_platform_interface: ^8.1.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -62,6 +65,24 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/fonts/inter/LICENSE.txt
+    - assets/fonts/geist_mono/OFL.txt
+    - assets/logo/logo-on-header.png
+    - assets/logo/logo.png
+    - assets/logo/github-logo.png
+  fonts:
+    - family: GeistMono
+      fonts:
+        - asset: assets/fonts/geist_mono/GeistMono.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/inter/Inter-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

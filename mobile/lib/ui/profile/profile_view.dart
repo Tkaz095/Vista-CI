@@ -1,0 +1,104 @@
+import 'package:flutter/material.dart';
+
+import '../../data/models/user_profile.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_button.dart';
+
+/// Displays the signed-in profile. Authentication still belongs to AuthViewModel.
+class ProfileView extends StatelessWidget {
+  const ProfileView({
+    super.key,
+    required this.profile,
+    required this.onSignOut,
+    this.isSigningOut = false,
+  });
+
+  final UserProfile profile;
+  final VoidCallback onSignOut;
+  final bool isSigningOut;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final name = profile.displayName.trim().isEmpty
+        ? 'Vista User'
+        : profile.displayName.trim();
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.page),
+      children: [
+        Text('Tài khoản', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: AppSpacing.page),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.page),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  child: Text(
+                    name.characters.first.toUpperCase(),
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.medium),
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge,
+                ),
+                if (profile.email.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.small),
+                  Text(
+                    profile.email,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.page),
+                const Divider(height: 1),
+                const SizedBox(height: AppSpacing.medium),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.small,
+                  children: [
+                    Image.asset(
+                      'assets/logo/github-logo.png',
+                      width: 20,
+                      height: 20,
+                      excludeFromSemantics: true,
+                    ),
+                    Text(
+                      'Đăng nhập bằng GitHub',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.page),
+        AppButton(
+          label: 'Đăng xuất',
+          loadingLabel: 'Đang đăng xuất…',
+          icon: Icons.logout,
+          variant: AppButtonVariant.secondary,
+          isLoading: isSigningOut,
+          onPressed: onSignOut,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: theme.colorScheme.primary,
+            side: BorderSide(color: theme.colorScheme.primary),
+          ),
+        ),
+      ],
+    );
+  }
+}
