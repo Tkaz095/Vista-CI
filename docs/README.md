@@ -1,3 +1,5 @@
+**Analytics/Crashlytics/Remote Config (05/11/2026):** [analytics plan](analytics-plan.md), [cấu hình và bằng chứng cần thu](firebase-observability-setup.md). Code đã tích hợp; trạng thái Console/thiết bị cần được xác minh riêng.
+
 **Kiến trúc/phiên Flutter mới nhất (04/11/2026): [architecture.md](../architecture.md).** Provider, state Loading/Success/Empty/Error, khôi phục phiên GitHub/Firebase, profile gate và navigation theo phiên. Các mô tả auth/state trong mốc cũ bên dưới là lịch sử.
 
 # Vista CI - Bộ tài liệu dự án

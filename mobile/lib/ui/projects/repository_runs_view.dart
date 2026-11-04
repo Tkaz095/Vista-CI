@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/project.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
 import '../../data/models/workflow_run.dart';
 import '../../data/repositories/github_actions_repository.dart';
 import '../theme/app_theme.dart';
@@ -22,11 +24,15 @@ class RepositoryRunsView extends StatefulWidget {
     required this.projectName,
     required this.repository,
     required this.accessToken,
+    this.telemetry,
+    this.configuration,
   });
   final ProjectRepo repo;
   final String projectName;
   final GitHubActionsRepository repository;
   final String? accessToken;
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
 
   @override
   State<RepositoryRunsView> createState() => _RepositoryRunsViewState();
@@ -284,6 +290,8 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
               run: run,
               repository: widget.repository,
               accessToken: widget.accessToken,
+              telemetry: widget.telemetry,
+              configuration: widget.configuration,
             ),
           ),
         ),

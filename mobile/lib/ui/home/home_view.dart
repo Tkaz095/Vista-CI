@@ -33,6 +33,8 @@ class _HomeViewState extends State<HomeView> {
         ProjectRepository(),
         uid: widget.profile.uid,
         accessToken: widget.viewModel.githubAccessToken,
+        telemetry: widget.viewModel.telemetry,
+        configuration: widget.viewModel.configuration,
       )..loadProjects(),
       child: Consumer<ProjectsViewModel>(
         builder: (context, projects, _) => PopScope(
@@ -70,6 +72,9 @@ class _HomeViewState extends State<HomeView> {
                         const ActionView(),
                         ProfileView(
                           profile: widget.profile,
+                          configuration: widget.viewModel.configuration,
+                          telemetry: widget.viewModel.telemetry,
+                          onDebugCrash: widget.viewModel.onDebugCrash,
                           isSigningOut: widget.viewModel.busy,
                           onSignOut: widget.viewModel.signOut,
                           onReconnectGitHub:

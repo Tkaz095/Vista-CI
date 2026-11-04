@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/state/async_state.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
 import '../../core/errors/project_error_message.dart';
 
 import '../../data/models/github_repo.dart';
@@ -13,6 +15,8 @@ class ProjectsViewModel extends ChangeNotifier {
     this._repository, {
     required this.uid,
     required this.accessToken,
+    this.telemetry,
+    this.configuration,
   });
 
   AsyncState<List<Project>> get projectsState => AsyncState.resolve(
@@ -29,6 +33,8 @@ class ProjectsViewModel extends ChangeNotifier {
   );
 
   final ProjectRepository _repository;
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
   final String uid;
   final String? accessToken;
 
@@ -75,7 +81,10 @@ class ProjectsViewModel extends ChangeNotifier {
     try {
       final result = await _repository.getProjects(uid);
       if (!_disposed) projects = result;
-    } catch (error) {
+    } catch (error, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(error, stack, AppOperation.projectRead);
+      }
       if (!_disposed) projectError = projectErrorMessage(error);
     } finally {
       if (!_disposed) {
@@ -105,12 +114,18 @@ class ProjectsViewModel extends ChangeNotifier {
     try {
       final result = await _repository.getGitHubRepositories(accessToken!);
       if (!_disposed) githubRepositories = result;
-    } on GitHubException catch (error) {
+    } on GitHubException catch (error, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(error, stack, AppOperation.repositoryRead);
+      }
       if (!_disposed) {
         repositoryError = error.message;
         if (error.requiresSignIn) githubRepositories = [];
       }
-    } catch (_) {
+    } catch (error, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(error, stack, AppOperation.repositoryRead);
+      }
       if (!_disposed) {
         repositoryError = 'Chưa tải được repo GitHub. Hãy thử lại.';
       }
@@ -176,13 +191,20 @@ class ProjectsViewModel extends ChangeNotifier {
         );
       }
       if (_disposed) return false;
+      telemetry?.event(
+        project == null ? AppEvent.projectCreate : AppEvent.projectUpdate,
+        parameters: {'repo_count': repos.length},
+      );
       // A failed reload is shown on the list, not reported as a failed write.
       await loadProjects();
       if (!_disposed && projectError.isNotEmpty) {
         projectError = 'Project đã được lưu. $projectError';
       }
       return !_disposed;
-    } catch (error) {
+    } catch (error, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(error, stack, AppOperation.projectWrite);
+      }
       if (!_disposed) saveError = projectErrorMessage(error);
       return false;
     } finally {
@@ -202,8 +224,12 @@ class ProjectsViewModel extends ChangeNotifier {
       await _repository.deleteProject(uid, project.id);
       if (_disposed) return false;
       projects = projects.where((item) => item.id != project.id).toList();
+      telemetry?.event(AppEvent.projectDelete);
       return true;
-    } catch (error) {
+    } catch (error, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(error, stack, AppOperation.projectWrite);
+      }
       if (!_disposed) saveError = projectErrorMessage(error);
       return false;
     } finally {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/project.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
 import '../../data/repositories/ci_analysis_repository.dart';
 import '../../data/models/workflow_run.dart';
 import '../../data/repositories/github_actions_repository.dart';
@@ -27,12 +29,16 @@ class WorkflowRunDetailView extends StatefulWidget {
     required this.repository,
     required this.accessToken,
     this.analysisRepository,
+    this.telemetry,
+    this.configuration,
   });
   final ProjectRepo repo;
   final WorkflowRun run;
   final GitHubActionsRepository repository;
   final String? accessToken;
   final CiAnalysisRepository? analysisRepository;
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
 
   @override
   State<WorkflowRunDetailView> createState() => _WorkflowRunDetailViewState();
@@ -51,6 +57,8 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
       run: widget.run,
       accessToken: widget.accessToken,
       analysisRepository: widget.analysisRepository,
+      telemetry: widget.telemetry,
+      configuration: widget.configuration,
     );
     model.load();
   }
@@ -97,7 +105,9 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
                   !model.preparingAnalysis,
               onSelected: _handleAction,
               itemBuilder: (_) => [
-                if (model.hasFailedJobs && model.analysis == null)
+                if (model.analysisEnabled &&
+                    model.hasFailedJobs &&
+                    model.analysis == null)
                   PopupMenuItem(
                     value: _RunAction.analyze,
                     enabled: model.canAnalyze,
@@ -148,6 +158,13 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppSpacing.medium),
+                    if (!model.analysisEnabled) ...[
+                      const AppMessage(
+                        message: 'Tính năng phân tích CI mới đang tạm tắt.',
+                        type: AppMessageType.info,
+                      ),
+                      const SizedBox(height: AppSpacing.medium),
+                    ],
                     if (model.actionBusy) ...[
                       const AppLoading(
                         label: 'Đang gửi yêu cầu chạy lại…',

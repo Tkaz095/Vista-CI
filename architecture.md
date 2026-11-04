@@ -76,3 +76,11 @@ Test mới kiểm tra khôi phục phiên chờ profile, Provider disposal, logo
 Các test dùng fake không chứng minh OAuth/SHA/App Check/Rules đã hoạt động trên thiết bị thật. Kiểm tra Android tiếp theo: login GitHub → force-stop/mở lại → profile được khôi phục → kết nối lại GitHub → tải repo/CI → logout → Back không thấy dữ liệu cũ.
 
 Tham khảo API: [Provider](https://github.com/rrousselgit/provider/blob/master/packages/provider/README.md), [Firebase Auth state và persistence](https://firebase.google.com/docs/auth/flutter/start), [GitHub provider](https://firebase.google.com/docs/auth/flutter/federated-auth).
+
+## Analytics / Crashlytics / Remote Config — 05/11/2026
+
+`AppRuntime` là composition root của ba service Firebase mới. AuthViewModel và các ViewModel nghiệp vụ nhận `AppTelemetry` qua constructor; Firebase SDK chỉ nằm trong Service. `TelemetryService` phối hợp hai sink Analytics/Crash để kiểm thử bằng fake, serialize identity với event và cô lập lỗi tracking khỏi nghiệp vụ.
+
+`AppConfigViewModel` giữ cấu hình dùng chung suốt vòng đời app, không nằm trong scope dữ liệu theo UID. AuthViewModel truyền cấu hình xuống Projects/CI; WorkflowRunViewModel nghe cấu hình để cập nhật nút phân tích và kiểm tra lại feature flag tại cả prepare/analyze. ProjectDetailViewModel đọc page size khi tải trang. Defaults có sẵn trước khi fetch; lỗi fetch vẫn có UI fallback/retry trong Profile.
+
+Analytics/User ID chỉ gắn sau khi profile hợp lệ; logout/đổi UID/profile mất quyền xóa định danh. Không gửi PII/raw lỗi/log/prompt/comment lên telemetry. Crash test được bảo vệ ở cả UI debug và method ViewModel/Service. Các chi tiết event, fallback và nghiệm thu xem [analytics plan](docs/analytics-plan.md) và [hướng dẫn tích hợp](docs/firebase-observability-setup.md).

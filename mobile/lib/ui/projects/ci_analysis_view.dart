@@ -75,6 +75,13 @@ class _CiAnalysisViewState extends State<CiAnalysisView> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.section),
+                  if (!model.analysisEnabled) ...[
+                    const AppMessage(
+                      message: 'Tính năng phân tích CI mới đang tạm tắt.',
+                      type: AppMessageType.info,
+                    ),
+                    const SizedBox(height: AppSpacing.medium),
+                  ],
                   if (model.actionBusy)
                     const AppLoading(
                       label: 'Đang gửi yêu cầu chạy lại…',

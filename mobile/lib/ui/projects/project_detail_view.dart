@@ -49,6 +49,8 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
       repository,
       repositories: project?.repositories ?? [],
       accessToken: widget.viewModel.accessToken,
+      telemetry: widget.viewModel.telemetry,
+      configuration: widget.viewModel.configuration,
     );
     actions.load();
   }
@@ -294,6 +296,8 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
               projectName: project?.name ?? 'Project',
               repository: repository,
               accessToken: widget.viewModel.accessToken,
+              telemetry: widget.viewModel.telemetry,
+              configuration: widget.viewModel.configuration,
             ),
           ),
         ),

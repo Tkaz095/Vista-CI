@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/user_profile.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
+import '../settings/app_settings_panel.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 
@@ -12,9 +15,15 @@ class ProfileView extends StatelessWidget {
     required this.onSignOut,
     this.isSigningOut = false,
     this.onReconnectGitHub,
+    this.configuration,
+    this.telemetry,
+    this.onDebugCrash,
   });
 
   final UserProfile profile;
+  final AppConfigViewModel? configuration;
+  final AppTelemetry? telemetry;
+  final VoidCallback? onDebugCrash;
   final VoidCallback onSignOut;
   final bool isSigningOut;
   final VoidCallback? onReconnectGitHub;
@@ -113,6 +122,14 @@ class ProfileView extends StatelessWidget {
             side: BorderSide(color: theme.colorScheme.primary),
           ),
         ),
+        if (configuration != null || telemetry != null) ...[
+          const SizedBox(height: AppSpacing.page),
+          AppSettingsPanel(
+            configuration: configuration,
+            telemetry: telemetry,
+            onDebugCrash: onDebugCrash,
+          ),
+        ],
       ],
     );
   }
