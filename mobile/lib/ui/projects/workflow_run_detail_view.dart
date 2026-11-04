@@ -166,7 +166,7 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
                       ),
                       const SizedBox(height: AppSpacing.medium),
                     ],
-                    if (model.loading && details == null)
+                    if (model.state.isLoading && details == null)
                       const AppLoading(label: 'Đang tải đầy đủ job và step…')
                     else ...[
                       if (model.loading) ...[
@@ -176,7 +176,7 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
                         ),
                         const SizedBox(height: AppSpacing.medium),
                       ],
-                      if (model.error.isNotEmpty) ...[
+                      if (model.state.hasError) ...[
                         AppMessage(message: model.error),
                         const SizedBox(height: AppSpacing.medium),
                       ],
@@ -232,6 +232,7 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
   Future<bool> _confirmRerun({required bool failedOnly}) async {
     if (!model.canRerun) return false;
     final accepted = await showDialog<bool>(
+      useRootNavigator: false,
       context: context,
       builder: (context) => AlertDialog(
         title: Text(

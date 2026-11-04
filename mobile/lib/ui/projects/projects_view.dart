@@ -117,17 +117,17 @@ class ProjectsView extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        if (viewModel.loadingProjects) ...[
+        if (viewModel.projectsState.isLoading) ...[
           const SizedBox(height: 20),
           const LinearProgressIndicator(semanticsLabel: 'Đang tải project'),
         ],
-        if (viewModel.projectError.isNotEmpty) ...[
+        if (viewModel.projectsState.hasError) ...[
           const SizedBox(height: 20),
           AppMessage(message: viewModel.projectError),
         ],
         if (empty &&
-            !viewModel.loadingProjects &&
-            viewModel.projectError.isEmpty) ...[
+            !viewModel.projectsState.isLoading &&
+            !viewModel.projectsState.hasError) ...[
           const SizedBox(height: AppSpacing.section),
           AppEmptyState(
             message: viewModel.projectSearch.trim().isEmpty

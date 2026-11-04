@@ -11,11 +11,13 @@ class ProfileView extends StatelessWidget {
     required this.profile,
     required this.onSignOut,
     this.isSigningOut = false,
+    this.onReconnectGitHub,
   });
 
   final UserProfile profile;
   final VoidCallback onSignOut;
   final bool isSigningOut;
+  final VoidCallback? onReconnectGitHub;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +88,19 @@ class ProfileView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.page),
+        if (onReconnectGitHub != null) ...[
+          const Text(
+            'Phiên Vista đã được khôi phục. Kết nối lại GitHub để tải repository và CI.',
+          ),
+          const SizedBox(height: AppSpacing.medium),
+          AppButton(
+            label: 'Kết nối lại GitHub',
+            onPressed: onReconnectGitHub,
+            isLoading: isSigningOut,
+            icon: Icons.link,
+          ),
+          const SizedBox(height: AppSpacing.medium),
+        ],
         AppButton(
           label: 'Đăng xuất',
           loadingLabel: 'Đang đăng xuất…',

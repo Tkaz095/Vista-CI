@@ -1,3 +1,5 @@
+> Cập nhật phiên/MVVM 04/11/2026: xem [architecture.md](../architecture.md). App dùng Provider, theo dõi Firebase Auth để khôi phục phiên và bảo vệ toàn bộ stack màn hình. Khi mở lại app, vào Profile → Kết nối lại GitHub để lấy GitHub token trong RAM; không cần đăng xuất phiên Vista. GitHub vẫn là phương thức đăng nhập hiện hành.
+
 # Vista CI Mobile
 
 The Flutter client for Vista CI.

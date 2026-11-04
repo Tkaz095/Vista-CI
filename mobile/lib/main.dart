@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'data/repositories/auth_repository.dart';
 import 'ui/auth/auth_view.dart';
@@ -121,20 +122,17 @@ class _InitializationErrorState extends State<InitializationError> {
   );
 }
 
-class SessionGate extends StatefulWidget {
-  const SessionGate({super.key});
+class SessionGate extends StatelessWidget {
+  const SessionGate({super.key, this.repository});
+  final AuthRepository? repository;
   @override
-  State<SessionGate> createState() => _SessionGateState();
-}
-
-class _SessionGateState extends State<SessionGate> {
-  final AuthViewModel viewModel = AuthViewModel(AuthRepository());
-  @override
-  void dispose() {
-    viewModel.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AuthView(viewModel: viewModel);
+  Widget build(BuildContext context) => Provider<AuthRepository>(
+    create: (_) => repository ?? AuthRepository(),
+    child: ChangeNotifierProvider<AuthViewModel>(
+      create: (context) => AuthViewModel(context.read<AuthRepository>()),
+      child: Consumer<AuthViewModel>(
+        builder: (_, viewModel, _) => AuthView(viewModel: viewModel),
+      ),
+    ),
+  );
 }

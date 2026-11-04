@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/state/async_state.dart';
+
 import '../../data/models/project.dart';
 import '../../data/models/workflow_run.dart';
 import '../../data/repositories/github_actions_repository.dart';
@@ -13,6 +15,13 @@ class ProjectDetailViewModel extends ChangeNotifier {
     required List<ProjectRepo> repositories,
     required this.accessToken,
   }) : repositories = [...repositories];
+
+  AsyncState<Map<int, WorkflowRun?>> get state => AsyncState.resolve(
+    data: Map.unmodifiable(latestRuns),
+    loading: loading,
+    empty: latestRuns.isEmpty || latestRuns.values.every((run) => run == null),
+    error: errors.values.join('\n'),
+  );
 
   final GitHubActionsRepository _repository;
   final String? accessToken;

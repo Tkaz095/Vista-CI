@@ -144,7 +144,7 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.medium),
-                if (model.loading && model.runs.isEmpty)
+                if (model.state.isLoading && model.runs.isEmpty)
                   const AppLoading(label: 'Đang tải lịch sử chạy…')
                 else ...[
                   if (model.loading && !model.loadingMore) ...[
@@ -172,13 +172,11 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
                       ),
                     _runCard(context, model.runs[index]),
                   ],
-                  if (model.error.isNotEmpty) ...[
+                  if (model.state.hasError) ...[
                     AppMessage(message: model.error),
                     const SizedBox(height: AppSpacing.medium),
                   ],
-                  if (model.hasLoaded &&
-                      model.runs.isEmpty &&
-                      model.error.isEmpty)
+                  if (model.hasLoaded && model.state.isEmpty)
                     AppEmptyState(
                       message: model.filter == RunFilter.all
                           ? 'Repository chưa có lần chạy GitHub Actions.'

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/state/async_state.dart';
+
 import '../../data/models/ci_analysis.dart';
 import '../../data/repositories/ci_analysis_repository.dart';
 
@@ -18,6 +20,38 @@ class WorkflowRunViewModel extends ChangeNotifier {
     required this.accessToken,
     CiAnalysisRepository? analysisRepository,
   }) : _analyses = analysisRepository ?? CiAnalysisRepository(_repository);
+
+  AsyncState<WorkflowRunDetails?> get state => AsyncState.resolve(
+    data: details,
+    loading: loading,
+    empty: details == null || details!.jobs.isEmpty,
+    error: error,
+  );
+  AsyncState<CiAnalysis?> get analysisState => AsyncState.resolve(
+    data: analysis,
+    loading: readingAnalysis || analyzing,
+    empty: analysis == null,
+    error: analysisError,
+  );
+  AsyncState<CiAnalysisInput?> get preparationState => AsyncState.resolve(
+    data: preparedAnalysis,
+    loading: preparingAnalysis,
+    empty: preparedAnalysis == null,
+    error: analysisError,
+  );
+  AsyncState<List<GitHubPullRequest>> get pullRequestsState =>
+      AsyncState.resolve(
+        data: List.unmodifiable(pullRequests),
+        loading: loadingPullRequests,
+        empty: pullRequests.isEmpty,
+        error: commentError,
+      );
+  AsyncState<WorkflowLog?> logState(int jobId) => AsyncState.resolve(
+    data: logs[jobId],
+    loading: loadingJobs.contains(jobId),
+    empty: logs[jobId] == null || logs[jobId]!.text.isEmpty,
+    error: logErrors[jobId] ?? '',
+  );
 
   final GitHubActionsRepository _repository;
   final ProjectRepo repo;

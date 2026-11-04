@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/state/async_state.dart';
+
 import '../../data/models/project.dart';
 import '../../data/models/workflow_run.dart';
 import '../../data/repositories/github_actions_repository.dart';
@@ -22,6 +24,13 @@ class RepositoryRunsViewModel extends ChangeNotifier {
     required this.repo,
     required this.accessToken,
   });
+
+  AsyncState<List<WorkflowRun>> get state => AsyncState.resolve(
+    data: List.unmodifiable(runs),
+    loading: loading,
+    empty: runs.isEmpty,
+    error: error,
+  );
 
   final GitHubActionsRepository _repository;
   final ProjectRepo repo;
