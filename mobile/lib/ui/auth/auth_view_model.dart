@@ -8,6 +8,7 @@ class AuthViewModel extends ChangeNotifier {
   AuthViewModel(this._repository);
 
   final AuthRepository _repository;
+  AuthRepository get repository => _repository;
   UserProfile? profile;
   bool busy = false;
   String actionMessage = '';
@@ -24,6 +25,12 @@ class AuthViewModel extends ChangeNotifier {
     await _repository.signOut();
     if (!_disposed) profile = null;
   });
+
+  void updateProfile(UserProfile updatedProfile) {
+    if (_disposed) return;
+    profile = updatedProfile;
+    notifyListeners();
+  }
 
   // Login and logout share the same button loading/error handling.
   Future<void> _run(Future<void> Function() action) async {

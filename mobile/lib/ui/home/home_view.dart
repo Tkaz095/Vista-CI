@@ -78,8 +78,10 @@ class _HomeViewState extends State<HomeView> {
                     const ActionView(),
                     ProfileView(
                       profile: widget.profile,
+                      repository: widget.viewModel.repository,
                       isSigningOut: widget.viewModel.busy,
                       onSignOut: widget.viewModel.signOut,
+                      onProfileUpdated: widget.viewModel.updateProfile,
                     ),
                   ],
                 ),
