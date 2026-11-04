@@ -6,6 +6,7 @@ import '../../core/errors/auth_error_message.dart';
 import '../../core/state/async_state.dart';
 import '../../core/telemetry/app_telemetry.dart';
 import '../settings/app_config_view_model.dart';
+import '../notifications/notification_view_model.dart';
 import '../../data/models/auth_identity.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -17,11 +18,13 @@ class AuthViewModel extends ChangeNotifier {
     this.telemetry,
     this.configuration,
     this.onDebugCrash,
+    this.notifications,
   }) {
     _listen();
   }
 
   final AuthRepository _repository;
+  final NotificationViewModel? notifications;
   final AppTelemetry? telemetry;
   final AppConfigViewModel? configuration;
   final VoidCallback? onDebugCrash;
@@ -67,6 +70,7 @@ class AuthViewModel extends ChangeNotifier {
   void _publish(AsyncState<UserProfile> value) {
     if (_disposed) return;
     _state = value;
+    notifications?.bindSession(value.data?.uid);
     if (value.data == null && _telemetryUid != null) {
       telemetry?.identify(null);
       _telemetryUid = null;
@@ -189,7 +193,13 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signOut() => _run(() async {
-    await _repository.signOut();
+    await notifications?.beforeSignOut();
+    try {
+      await _repository.signOut();
+    } catch (_) {
+      notifications?.bindSession(profile?.uid);
+      rethrow;
+    }
     if (!_disposed) {
       telemetry?.identify(null);
       _telemetryUid = null;
@@ -226,6 +236,7 @@ class AuthViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    notifications?.bindSession(null);
     _clearProfile();
     _session?.cancel();
     super.dispose();

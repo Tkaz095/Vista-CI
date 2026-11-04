@@ -1,5 +1,10 @@
 import 'dart:ui' show PointerDeviceKind;
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+import 'data/services/firebase_messaging_service.dart';
+import 'ui/notifications/notification_view_model.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -33,6 +38,7 @@ Future<void> main() async {
 
 Future<AppRuntime> _initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   final runtime = AppRuntime();
   await runtime.initialize();
   if (!kIsWeb &&
@@ -80,6 +86,7 @@ class VistaCiApp extends StatelessWidget {
         : SessionGate(
             telemetry: runtime?.telemetry,
             configuration: runtime?.configuration,
+            notifications: runtime?.notifications,
             onDebugCrash: kDebugMode ? runtime?.crashes.testCrash : null,
           ),
   );
@@ -104,6 +111,7 @@ class _InitializationErrorState extends State<InitializationError> {
             builder: (_) => SessionGate(
               telemetry: runtime.telemetry,
               configuration: runtime.configuration,
+              notifications: runtime.notifications,
               onDebugCrash: kDebugMode ? runtime.crashes.testCrash : null,
             ),
           ),
@@ -151,7 +159,9 @@ class SessionGate extends StatelessWidget {
     this.telemetry,
     this.configuration,
     this.onDebugCrash,
+    this.notifications,
   });
+  final NotificationViewModel? notifications;
   final AppTelemetry? telemetry;
   final AppConfigViewModel? configuration;
   final VoidCallback? onDebugCrash;
@@ -164,6 +174,7 @@ class SessionGate extends StatelessWidget {
         context.read<AuthRepository>(),
         telemetry: telemetry,
         configuration: configuration,
+        notifications: notifications,
         onDebugCrash: onDebugCrash,
       ),
       child: Consumer<AuthViewModel>(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories/project_repository.dart';
 import '../action/action_view.dart';
+import '../notifications/notification_center_view.dart';
 import '../auth/auth_view_model.dart';
 import '../profile/profile_view.dart';
 import '../projects/projects_view.dart';
@@ -45,7 +46,26 @@ class _HomeViewState extends State<HomeView> {
             }
           },
           child: Scaffold(
-            appBar: const AppHeader(),
+            appBar: widget.viewModel.notifications == null
+                ? const AppHeader(showNotifications: false)
+                : PreferredSize(
+                    preferredSize: const Size.fromHeight(64),
+                    child: ListenableBuilder(
+                      listenable: widget.viewModel.notifications!,
+                      builder: (context, _) => AppHeader(
+                        unreadCount:
+                            widget.viewModel.notifications!.unreadCount,
+                        onNotificationsPressed: () =>
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => NotificationCenterView(
+                                  model: widget.viewModel.notifications!,
+                                ),
+                              ),
+                            ),
+                      ),
+                    ),
+                  ),
             bottomNavigationBar: AppBottomTab(
               selectedTab: selectedTab,
               onSelected: (tab) {

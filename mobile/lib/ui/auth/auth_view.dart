@@ -8,6 +8,8 @@ import '../widgets/app_message.dart';
 import '../widgets/app_loading.dart';
 import '../widgets/app_header.dart';
 import 'auth_view_model.dart';
+import '../notifications/notification_center_view.dart';
+import '../notifications/notification_run_view.dart';
 
 /// Rebuilds the current screen when login or logout updates the ViewModel.
 class AuthView extends StatelessWidget {
@@ -75,6 +77,88 @@ class _AuthenticatedSession extends StatefulWidget {
 
 class _AuthenticatedSessionState extends State<_AuthenticatedSession> {
   final navigator = GlobalKey<NavigatorState>();
+
+  String? _openingId;
+  int _foregroundRevision = 0;
+  ScaffoldMessengerState? _messenger;
+  @override
+  void initState() {
+    super.initState();
+    _foregroundRevision =
+        widget.viewModel.notifications?.foregroundRevision ?? 0;
+    widget.viewModel.notifications?.addListener(_notificationChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notificationChanged());
+  }
+
+  void _notificationChanged() {
+    if (!mounted) return;
+    final notifications = widget.viewModel.notifications;
+    if (notifications == null) return;
+    final item = notifications.pendingOpen;
+    if (item != null &&
+        item.uid == widget.viewModel.profile?.uid &&
+        _openingId != item.id) {
+      _openingId = item.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            notifications.pendingOpen?.id != item.id ||
+            item.uid != widget.viewModel.profile?.uid) {
+          return;
+        }
+        final nav = navigator.currentState;
+        if (nav == null) {
+          _openingId = null;
+          return;
+        }
+        final target = item.target;
+        // Keep a cold-start target until the GitHub reconnect rebuilds this session.
+        if (target == null || widget.viewModel.githubAccessToken != null) {
+          notifications.consumeOpen(item.id);
+        }
+        notifications.markRead(item);
+        nav
+            .push(
+              MaterialPageRoute<void>(
+                builder: (_) => target == null
+                    ? NotificationCenterView(model: notifications)
+                    : NotificationRunView(
+                        target: target,
+                        auth: widget.viewModel,
+                      ),
+              ),
+            )
+            .then((_) {
+              if (!mounted) return;
+              notifications.consumeOpen(item.id);
+              _openingId = null;
+            });
+      });
+    }
+    if (notifications.foregroundRevision > _foregroundRevision) {
+      _foregroundRevision = notifications.foregroundRevision;
+      final notice = notifications.foregroundNotice;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || notice == null) return;
+        _messenger = ScaffoldMessenger.maybeOf(context);
+        _messenger?.showSnackBar(
+          SnackBar(
+            content: Text(notice.title),
+            action: SnackBarAction(
+              label: 'Xem',
+              onPressed: () => notifications.open(notice),
+            ),
+          ),
+        );
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.viewModel.notifications?.removeListener(_notificationChanged);
+    _messenger?.clearSnackBars();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => HeroControllerScope.none(

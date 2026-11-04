@@ -98,6 +98,18 @@ class FakeActionsRepository implements GitHubActionsRepository {
   GitHubComment? foundComment;
 
   @override
+  Future<WorkflowRun> getRunAttempt(
+    String? token,
+    ProjectRepo repo,
+    int runId,
+    int attempt,
+  ) async {
+    if (error != null) throw error!;
+    if (pendingDetails != null) return (await pendingDetails!.future).run;
+    return details.run;
+  }
+
+  @override
   Future<WorkflowLog> getAnalysisLog(
     String? token,
     ProjectRepo repo,
@@ -853,6 +865,8 @@ void main() {
           expect(find.widgetWithText(TextButton, 'Vista'), findsOneWidget);
           expect(find.byType(AppLoading), findsOneWidget);
           historyGate.complete(runsResponse([10]));
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text('Build mobile 10'));
           await tester.pumpAndSettle();
           await tester.tap(find.text('Build mobile 10'));
           await tester.pump();

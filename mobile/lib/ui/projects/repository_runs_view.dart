@@ -15,6 +15,7 @@ import '../widgets/app_stack_header.dart';
 import '../widgets/workflow_run_summary.dart';
 import '../widgets/workflow_status_badge.dart';
 import 'repository_runs_view_model.dart';
+import '../notifications/ci_notification_preferences_panel.dart';
 import 'workflow_run_detail_view.dart';
 
 class RepositoryRunsView extends StatefulWidget {
@@ -103,6 +104,14 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
               children: [
                 _repositoryInfo(context),
                 const SizedBox(height: AppSpacing.page),
+                if (widget.ownerUid != null) ...[
+                  CiNotificationPreferencesPanel(
+                    uid: widget.ownerUid!,
+                    repo: widget.repo,
+                    telemetry: widget.telemetry,
+                  ),
+                  const SizedBox(height: AppSpacing.page),
+                ],
                 Text('Trạng thái', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.small),
                 Wrap(

@@ -45,6 +45,7 @@ enum AppOperation {
   reportUpload,
   reportShare,
   reportOpen,
+  notifications,
 }
 
 abstract class AppTelemetry {
