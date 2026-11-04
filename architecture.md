@@ -81,6 +81,10 @@ Tham khảo API: [Provider](https://github.com/rrousselgit/provider/blob/master/
 
 `AppRuntime` là composition root của ba service Firebase mới. AuthViewModel và các ViewModel nghiệp vụ nhận `AppTelemetry` qua constructor; Firebase SDK chỉ nằm trong Service. `TelemetryService` phối hợp hai sink Analytics/Crash để kiểm thử bằng fake, serialize identity với event và cô lập lỗi tracking khỏi nghiệp vụ.
 
-`AppConfigViewModel` giữ cấu hình dùng chung suốt vòng đời app, không nằm trong scope dữ liệu theo UID. AuthViewModel truyền cấu hình xuống Projects/CI; WorkflowRunViewModel nghe cấu hình để cập nhật nút phân tích và kiểm tra lại feature flag tại cả prepare/analyze. ProjectDetailViewModel đọc page size khi tải trang. Defaults có sẵn trước khi fetch; lỗi fetch vẫn có UI fallback/retry trong Profile.
+`AppConfigViewModel` giữ cấu hình dùng chung suốt vòng đời app, không nằm trong scope dữ liệu theo UID. AuthViewModel truyền cấu hình xuống Projects/CI; WorkflowRunViewModel nghe cấu hình để cập nhật nút phân tích và kiểm tra lại feature flag tại cả prepare/analyze. ProjectDetailViewModel cố định 5 repo mỗi trang, không phụ thuộc Remote Config. Defaults có sẵn trước khi fetch; lỗi fetch vẫn có UI fallback/retry trong Profile.
 
 Analytics/User ID chỉ gắn sau khi profile hợp lệ; logout/đổi UID/profile mất quyền xóa định danh. Không gửi PII/raw lỗi/log/prompt/comment lên telemetry. Crash test được bảo vệ ở cả UI debug và method ViewModel/Service. Các chi tiết event, fallback và nghiệm thu xem [analytics plan](docs/analytics-plan.md) và [hướng dẫn tích hợp](docs/firebase-observability-setup.md).
+
+## CI report PDF / Cloudinary — 05/11/2026
+
+Theo quyết định người dùng, report dùng Cloudinary unsigned upload thay Firebase Storage. View chỉ gọi ViewModel; `CiReportViewModel → CiReportRepository → PDF / Cloudinary / Sharing services`. Snapshot giữ đúng UID/repo/run/attempt/SHA; font local, xuất PDF không gọi AI. Service upload nhận cấu hình public từ Remote Config (`cloudinary_cloud_name`, `cloudinary_upload_preset`) mỗi request; không dùng API secret hoặc backend mới. URL là công khai; UID trong đường dẫn không phải ACL. Chi tiết setup/test/giới hạn xem [hướng dẫn báo cáo](docs/ci-report-cloudinary.md).

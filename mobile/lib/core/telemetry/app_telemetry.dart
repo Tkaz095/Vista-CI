@@ -10,7 +10,9 @@ enum AppEvent {
   analysisStart('ci_analysis_start'),
   analysisComplete('ci_analysis_complete'),
   rerunRequested('workflow_rerun_requested'),
-  commentSent('pr_comment_sent');
+  commentSent('pr_comment_sent'),
+  reportExport('ci_report_export'),
+  reportUpload('ci_report_upload');
 
   const AppEvent(this.name);
   final String name;
@@ -39,6 +41,10 @@ enum AppOperation {
   flutterFramework,
   platformDispatcher,
   debugTest,
+  reportGenerate,
+  reportUpload,
+  reportShare,
+  reportOpen,
 }
 
 abstract class AppTelemetry {

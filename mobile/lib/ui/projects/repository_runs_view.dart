@@ -26,6 +26,7 @@ class RepositoryRunsView extends StatefulWidget {
     required this.accessToken,
     this.telemetry,
     this.configuration,
+    this.ownerUid,
   });
   final ProjectRepo repo;
   final String projectName;
@@ -33,6 +34,7 @@ class RepositoryRunsView extends StatefulWidget {
   final String? accessToken;
   final AppTelemetry? telemetry;
   final AppConfigViewModel? configuration;
+  final String? ownerUid;
 
   @override
   State<RepositoryRunsView> createState() => _RepositoryRunsViewState();
@@ -292,6 +294,7 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
               accessToken: widget.accessToken,
               telemetry: widget.telemetry,
               configuration: widget.configuration,
+              ownerUid: widget.ownerUid,
             ),
           ),
         ),

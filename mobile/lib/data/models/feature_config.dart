@@ -1,11 +1,17 @@
 class FeatureConfig {
-  const FeatureConfig({this.analysisEnabled = true, this.repoPageSize = 5});
+  const FeatureConfig({
+    this.analysisEnabled = true,
+    this.cloudinaryCloudName = '',
+    this.cloudinaryUploadPreset = '',
+  });
   final bool analysisEnabled;
-  final int repoPageSize;
+  final String cloudinaryCloudName;
+  final String cloudinaryUploadPreset;
   static const defaults = FeatureConfig();
   static const parameters = <String, Object>{
     'ci_analysis_enabled': true,
-    'project_repo_page_size': 5,
+    'cloudinary_cloud_name': '',
+    'cloudinary_upload_preset': '',
   };
   factory FeatureConfig.fromStrings(Map<String, String> values) {
     final enabled = switch (values['ci_analysis_enabled']
@@ -15,10 +21,10 @@ class FeatureConfig {
       'false' || '0' => false,
       _ => true,
     };
-    final count = int.tryParse(values['project_repo_page_size'] ?? '') ?? 5;
     return FeatureConfig(
       analysisEnabled: enabled,
-      repoPageSize: count.clamp(1, 20),
+      cloudinaryCloudName: values['cloudinary_cloud_name']?.trim() ?? '',
+      cloudinaryUploadPreset: values['cloudinary_upload_preset']?.trim() ?? '',
     );
   }
 }

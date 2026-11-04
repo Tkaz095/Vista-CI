@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/state/async_state.dart';
 import '../../core/telemetry/app_telemetry.dart';
-import '../settings/app_config_view_model.dart';
 
 import '../../data/models/project.dart';
 import '../../data/models/workflow_run.dart';
@@ -17,7 +16,6 @@ class ProjectDetailViewModel extends ChangeNotifier {
     required List<ProjectRepo> repositories,
     required this.accessToken,
     this.telemetry,
-    this.configuration,
   }) : repositories = [...repositories] {
     telemetry?.event(
       AppEvent.projectDetailView,
@@ -34,8 +32,7 @@ class ProjectDetailViewModel extends ChangeNotifier {
 
   final GitHubActionsRepository _repository;
   final AppTelemetry? telemetry;
-  final AppConfigViewModel? configuration;
-  int get pageSize => configuration?.config.repoPageSize ?? 5;
+  static const int pageSize = 5;
   final String? accessToken;
   List<ProjectRepo> repositories;
   Map<int, WorkflowRun?> latestRuns = {};
@@ -45,7 +42,6 @@ class ProjectDetailViewModel extends ChangeNotifier {
   DateTime? updatedAt;
   bool _disposed = false;
   int _version = 0;
-  int? _lastPageSize;
 
   bool get hasMore => visibleCount < repositories.length;
 
@@ -75,17 +71,11 @@ class ProjectDetailViewModel extends ChangeNotifier {
     if (_disposed || loading || (more && !hasMore)) return;
     final version = ++_version;
     final size = pageSize;
-    final sizeChanged = _lastPageSize != null && _lastPageSize != size;
-    final append = more && !sizeChanged;
+    final append = more;
     final count = math.min(
       repositories.length,
-      append
-          ? visibleCount + size
-          : sizeChanged
-          ? size
-          : math.max(visibleCount, size),
+      append ? visibleCount + size : math.max(visibleCount, size),
     );
-    _lastPageSize = size;
     final start = append ? visibleCount : 0;
     final batch = repositories.sublist(start, count);
     final nextRuns = {...latestRuns};

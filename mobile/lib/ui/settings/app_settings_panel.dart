@@ -84,9 +84,6 @@ class _AppSettingsPanelState extends State<AppSettingsPanel> {
             Text(
               'Phân tích CI mới: ${configuration.config.analysisEnabled ? "Bật" : "Tắt"}',
             ),
-            Text(
-              'Repo mỗi trang tổng quan: ${configuration.config.repoPageSize}',
-            ),
             if (configuration.state.hasError)
               AppMessage(message: configuration.state.message),
             const SizedBox(height: AppSpacing.medium),

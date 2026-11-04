@@ -288,100 +288,79 @@ void main() {
   test('Remote Config values are validated and fetch errors restore local defaults', () async {
     final telemetry = RecordingTelemetry();
     final source = FakeConfig()
-      ..value = const FeatureConfig(analysisEnabled: false, repoPageSize: 2);
+      ..value = const FeatureConfig(analysisEnabled: false);
     final config = AppConfigViewModel(source, telemetry: telemetry);
     addTearDown(config.dispose);
     await config.refresh();
     expect(config.config.analysisEnabled, isFalse);
-    expect(config.config.repoPageSize, 2);
     source.error = StateError('offline');
     await config.refresh();
     expect(config.state.status, LoadStatus.error);
     expect(config.config.analysisEnabled, isTrue);
-    expect(config.config.repoPageSize, 5);
     expect(telemetry.errors, [AppOperation.remoteConfig]);
     expect(
-      FeatureConfig.fromStrings({
-        'ci_analysis_enabled': 'wrong',
-        'project_repo_page_size': 'wrong',
-      }).repoPageSize,
-      5,
+      FeatureConfig.fromStrings({'ci_analysis_enabled': 'wrong'})
+          .analysisEnabled,
+      isTrue,
     );
-    expect(
-      FeatureConfig.fromStrings({'project_repo_page_size': '100'}).repoPageSize,
-      20,
-    );
-    expect(
-      FeatureConfig.fromStrings({'project_repo_page_size': '0'}).repoPageSize,
-      1,
-    );
+    expect(FeatureConfig.parameters, isNot(contains('project_repo_page_size')));
   });
 
-  test(
-    'Remote Config changes repo pagination and blocks a prepared AI request',
-    () async {
-      final source = FakeConfig()..value = const FeatureConfig(repoPageSize: 2);
-      final config = AppConfigViewModel(source);
-      addTearDown(config.dispose);
-      await config.refresh();
-      final github = FakeActionsRepository();
-      final overview = ProjectDetailViewModel(
-        github,
-        repositories: List.generate(
-          6,
-          (i) => ProjectRepo(id: i + 1, fullName: 'team/repo$i'),
-        ),
-        accessToken: 'fake',
-        configuration: config,
-      );
-      addTearDown(overview.dispose);
-      await overview.load();
-      expect(overview.visibleCount, 2);
-      await overview.load(more: true);
-      expect(overview.visibleCount, 4);
-      final analyses = FakeCiRepository(github);
-      final telemetry = RecordingTelemetry();
-      final run = WorkflowRunViewModel(
-        github,
-        repo: savedRepo,
-        run: github.details.run,
-        accessToken: 'fake',
-        analysisRepository: analyses,
-        configuration: config,
-        telemetry: telemetry,
-      );
-      addTearDown(run.dispose);
-      await run.load();
-      await flush();
-      await run.prepareAnalysis();
-      expect(run.preparedAnalysis, isNotNull);
-      source.value = const FeatureConfig(
-        analysisEnabled: false,
-        repoPageSize: 3,
-      );
-      await config.refresh();
-      expect(run.canAnalyze, isFalse);
-      await run.analyze();
-      expect(analyses.analyzeCalls, 0);
-      await overview.load();
-      expect(overview.visibleCount, 3);
-      source.value = const FeatureConfig(
-        analysisEnabled: true,
-        repoPageSize: 3,
-      );
-      await config.refresh();
-      await run.analyze();
-      expect(analyses.analyzeCalls, 1);
-      expect(
-        telemetry.events,
-        containsAllInOrder([
-          AppEvent.workflowDetailView,
-          AppEvent.analysisStart,
-          AppEvent.analysisComplete,
-        ]),
-      );
-    },
-  );
+  test('Remote Config blocks a prepared AI request while repo pagination stays fixed', () async {
+    final source = FakeConfig();
+    final config = AppConfigViewModel(source);
+    addTearDown(config.dispose);
+    await config.refresh();
+    final github = FakeActionsRepository();
+    final overview = ProjectDetailViewModel(
+      github,
+      repositories: List.generate(
+        6,
+        (i) => ProjectRepo(id: i + 1, fullName: 'team/repo$i'),
+      ),
+      accessToken: 'fake',
+    );
+    addTearDown(overview.dispose);
+    await overview.load();
+    expect(overview.visibleCount, 5);
+    await overview.load(more: true);
+    expect(overview.visibleCount, 6);
+    final analyses = FakeCiRepository(github);
+    final telemetry = RecordingTelemetry();
+    final run = WorkflowRunViewModel(
+      github,
+      repo: savedRepo,
+      run: github.details.run,
+      accessToken: 'fake',
+      analysisRepository: analyses,
+      configuration: config,
+      telemetry: telemetry,
+    );
+    addTearDown(run.dispose);
+    await run.load();
+    await flush();
+    await run.prepareAnalysis();
+    expect(run.preparedAnalysis, isNotNull);
+    source.value = const FeatureConfig(analysisEnabled: false);
+    await config.refresh();
+    expect(run.canAnalyze, isFalse);
+    await run.analyze();
+    expect(analyses.analyzeCalls, 0);
+    await overview.load();
+    expect(overview.visibleCount, 6);
+    source.value = const FeatureConfig(analysisEnabled: true);
+    await config.refresh();
+    await run.analyze();
+    expect(analyses.analyzeCalls, 1);
+    expect(
+      telemetry.events,
+      containsAllInOrder([
+        AppEvent.workflowDetailView,
+        AppEvent.analysisStart,
+        AppEvent.analysisComplete,
+      ]),
+    );
+  });
 
   testWidgets(
     'Config values and fallback errors are observable in Profile settings',
@@ -399,14 +378,11 @@ void main() {
         ),
       );
       expect(find.text('Phân tích CI mới: Bật'), findsOneWidget);
-      source.value = const FeatureConfig(
-        analysisEnabled: false,
-        repoPageSize: 2,
-      );
+      source.value = const FeatureConfig(analysisEnabled: false);
       await tester.tap(find.text('Cập nhật cấu hình'));
       await tester.pumpAndSettle();
       expect(find.text('Phân tích CI mới: Tắt'), findsOneWidget);
-      expect(find.text('Repo mỗi trang tổng quan: 2'), findsOneWidget);
+      expect(find.textContaining('Repo mỗi trang tổng quan'), findsNothing);
       source.error = StateError('offline');
       await tester.tap(find.text('Cập nhật cấu hình'));
       await tester.pumpAndSettle();

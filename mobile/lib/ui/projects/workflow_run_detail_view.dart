@@ -31,6 +31,7 @@ class WorkflowRunDetailView extends StatefulWidget {
     this.analysisRepository,
     this.telemetry,
     this.configuration,
+    this.ownerUid,
   });
   final ProjectRepo repo;
   final WorkflowRun run;
@@ -39,6 +40,7 @@ class WorkflowRunDetailView extends StatefulWidget {
   final CiAnalysisRepository? analysisRepository;
   final AppTelemetry? telemetry;
   final AppConfigViewModel? configuration;
+  final String? ownerUid;
 
   @override
   State<WorkflowRunDetailView> createState() => _WorkflowRunDetailViewState();
@@ -59,6 +61,7 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
       analysisRepository: widget.analysisRepository,
       telemetry: widget.telemetry,
       configuration: widget.configuration,
+      ownerUid: widget.ownerUid,
     );
     model.load();
   }

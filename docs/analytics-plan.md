@@ -21,6 +21,15 @@ Lập ngày 04/11/2026, trước khi thêm tracking. Phạm vi là Flutter Andro
 | `workflow_rerun_requested` | GitHub chấp nhận rerun | `failed_only` (0/1); không diễn giải thành run success |
 | `pr_comment_sent` | Đã nhận/đối soát được comment | không; không ghi khi kết quả POST chưa rõ |
 
+Bổ sung trước khi code xuất báo cáo (05/11/2026):
+
+| Event | Trigger | Parameters |
+|---|---|---|
+| `ci_report_export` | PDF từ snapshot phân tích đã được tạo thành công trên thiết bị | không |
+| `ci_report_upload` | Cloudinary upload hoàn tất và nhận được secure_url hợp lệ | không |
+
+Không gửi filename, object path, download URL, UID trong event parameters hoặc nội dung báo cáo. Retry lấy URL không ghi lặp event upload sau khi đã thành công trong cùng màn hình.
+
 User ID dùng Firebase UID, chỉ đặt khi profile của UID đó hợp lệ. Khi đổi UID, logout hoặc profile mất quyền thì xóa User ID trước các event tiếp theo. Phiên khôi phục không ghi thêm `login`; reconnect GitHub trong cùng phiên không ghi login lần hai.
 
 ## Quyền riêng tư và hợp đồng
@@ -39,4 +48,4 @@ Telemetry là best effort và không làm thất bại thao tác nghiệp vụ. 
 4. Crashlytics: tạo non-fatal trong debug, test fatal rồi mở lại app để gửi báo cáo. Thu ảnh Console sau khi báo cáo xuất hiện.
 5. Lưu commit, thiết bị, ngày chạy và ảnh DebugView/Crashlytics. Chưa có ảnh Console hoặc nghiệm thu thiết bị tại thời điểm lập plan.
 
-Remote Config dùng `ci_analysis_enabled` (bool, default true) và `project_repo_page_size` (int, default 5, giới hạn 1–20). Khóa thứ nhất điều khiển khả năng bắt đầu phân tích mới; khóa thứ hai điều khiển số repo trong mỗi trang tổng quan project. Không dùng Remote Config làm phân quyền. Giá trị thiếu/sai kiểu, offline hoặc fetch lỗi dùng fallback local. Chi tiết thực thi và kiểm tra sẽ nằm trong tài liệu tích hợp.
+Remote Config dùng `ci_analysis_enabled` (bool, default true) để điều khiển khả năng bắt đầu phân tích mới, cùng `cloudinary_cloud_name` và `cloudinary_upload_preset` (string, default rỗng) cho upload báo cáo. Tổng quan project cố định 5 repo mỗi trang trong app. Không dùng Remote Config làm phân quyền. Giá trị thiếu/sai kiểu, offline hoặc fetch lỗi dùng fallback local.

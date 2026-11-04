@@ -23,6 +23,7 @@ class WorkflowRunViewModel extends ChangeNotifier {
     CiAnalysisRepository? analysisRepository,
     this.telemetry,
     this.configuration,
+    this.ownerUid,
   }) : _analyses = analysisRepository ?? CiAnalysisRepository(_repository) {
     configuration?.addListener(_configurationChanged);
     telemetry?.event(
@@ -33,6 +34,7 @@ class WorkflowRunViewModel extends ChangeNotifier {
 
   final AppTelemetry? telemetry;
   final AppConfigViewModel? configuration;
+  final String? ownerUid;
   bool get analysisEnabled => configuration?.config.analysisEnabled ?? true;
   void _configurationChanged() {
     if (!_disposed) notifyListeners();

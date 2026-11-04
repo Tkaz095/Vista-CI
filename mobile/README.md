@@ -1,3 +1,5 @@
+> Báo cáo CI: [xuất PDF và cấu hình Cloudinary qua Firebase Remote Config](../docs/ci-report-cloudinary.md). Không cần Firebase Storage/billing cho luồng này.
+
 > Analytics/Crashlytics/Remote Config: xem [hướng dẫn cấu hình và demo](../docs/firebase-observability-setup.md) và [analytics plan](../docs/analytics-plan.md). Sau khi cập nhật code phải rebuild APK để thêm native plugins.
 
 > Cập nhật phiên/MVVM 04/11/2026: xem [architecture.md](../architecture.md). App dùng Provider, theo dõi Firebase Auth để khôi phục phiên và bảo vệ toàn bộ stack màn hình. Khi mở lại app, vào Profile → Kết nối lại GitHub để lấy GitHub token trong RAM; không cần đăng xuất phiên Vista. GitHub vẫn là phương thức đăng nhập hiện hành.
