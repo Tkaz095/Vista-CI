@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,6 +44,26 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> signOut() async {
     signOutCalls++;
     if (signOutError != null) throw signOutError!;
+  }
+
+  @override
+  Future<String> uploadAvatar({
+    required String uid,
+    required Uint8List bytes,
+    required String fileExtension,
+  }) async => 'https://example.com/avatar.jpg';
+
+  @override
+  Future<void> removeAvatar({
+    required String uid,
+    String? currentUrl,
+  }) async {}
+
+  @override
+  Future<void> updateDisplayName({
+    required String uid,
+    required String displayName,
+  }) async {
   }
 }
 

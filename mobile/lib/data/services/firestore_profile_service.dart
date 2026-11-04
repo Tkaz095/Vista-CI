@@ -19,4 +19,16 @@ class FirestoreProfileService {
       return initialData;
     });
   }
+
+  /// Updates specific fields in user profile.
+  Future<void> updateProfile(String uid, Map<String, dynamic> data) async {
+    final reference = _firestore.collection('users').doc(uid);
+    await reference.set(data, SetOptions(merge: true));
+  }
+
+  /// Fetches the profile data from Firestore.
+  Future<Map<String, dynamic>?> getProfile(String uid) async {
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    return snapshot.data();
+  }
 }
