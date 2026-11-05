@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/user_profile.dart';
+import '../../core/telemetry/app_telemetry.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../settings/app_config_view_model.dart';
+import '../settings/app_settings_panel.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import 'profile_view_model.dart';
@@ -14,13 +17,21 @@ class ProfileView extends StatefulWidget {
     required this.profile,
     required this.onSignOut,
     this.isSigningOut = false,
+    this.onReconnectGitHub,
+    this.configuration,
+    this.telemetry,
+    this.onDebugCrash,
     this.repository,
     this.onProfileUpdated,
   });
 
   final UserProfile profile;
+  final AppConfigViewModel? configuration;
+  final AppTelemetry? telemetry;
+  final VoidCallback? onDebugCrash;
   final VoidCallback onSignOut;
   final bool isSigningOut;
+  final VoidCallback? onReconnectGitHub;
   final AuthRepository? repository;
   final void Function(UserProfile)? onProfileUpdated;
 
@@ -451,6 +462,31 @@ class _ProfileViewState extends State<ProfileView> {
 
             const SizedBox(height: AppSpacing.page),
 
+            if (widget.onReconnectGitHub != null) ...[
+              Text(
+                'Phiên Vista đã được khôi phục. Kết nối lại GitHub để tải repository và CI.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.medium),
+              AppButton(
+                label: 'Kết nối lại GitHub',
+                onPressed: widget.onReconnectGitHub,
+                isLoading: widget.isSigningOut,
+                icon: Icons.link,
+              ),
+              const SizedBox(height: AppSpacing.page),
+            ],
+
+            if (widget.configuration != null || widget.telemetry != null)
+              AppSettingsPanel(
+                configuration: widget.configuration,
+                telemetry: widget.telemetry,
+                onDebugCrash: widget.onDebugCrash,
+              ),
+
+            if (widget.configuration != null || widget.telemetry != null)
+              const SizedBox(height: AppSpacing.page),
+
             // Nút đăng xuất
             AppButton(
               label: 'Đăng xuất',
@@ -517,7 +553,6 @@ class _ProfileViewState extends State<ProfileView> {
                   : _buildInitialsAvatar(theme, name, radius),
             ),
           ),
-
           // Loading overlay khi đang tải ảnh lên Firebase Storage
           if (_viewModel.isUploadingAvatar)
             Container(

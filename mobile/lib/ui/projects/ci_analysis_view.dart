@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/ci_analysis.dart';
+import '../../data/models/ci_report.dart';
+import '../../cloudinary_options.dart';
+import '../../data/services/cloudinary_report_storage_service.dart';
+import '../../data/repositories/ci_report_repository.dart';
+import '../reports/ci_report_view.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_loading.dart';
@@ -16,11 +21,13 @@ class CiAnalysisView extends StatefulWidget {
     required this.model,
     required this.onRerun,
     this.startAnalysis = false,
+    this.reportRepository,
   });
 
   final WorkflowRunViewModel model;
   final Future<bool> Function(bool failedOnly) onRerun;
   final bool startAnalysis;
+  final CiReportRepository? reportRepository;
 
   @override
   State<CiAnalysisView> createState() => _CiAnalysisViewState();
@@ -50,7 +57,24 @@ class _CiAnalysisViewState extends State<CiAnalysisView> {
       return PopScope(
         canPop: !busy,
         child: Scaffold(
-          appBar: AppStackHeader(title: 'Phân tích CI', canGoBack: !busy),
+          appBar: AppStackHeader(
+            title: 'Phân tích CI',
+            canGoBack: !busy,
+            actions: [
+              IconButton(
+                tooltip: 'Xuất báo cáo PDF',
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                onPressed:
+                    result != null &&
+                        model.ownerUid != null &&
+                        !busy &&
+                        !preparing &&
+                        !model.loading
+                    ? _openReport
+                    : null,
+              ),
+            ],
+          ),
           body: SafeArea(
             child: RefreshIndicator(
               onRefresh: _refresh,
@@ -75,6 +99,13 @@ class _CiAnalysisViewState extends State<CiAnalysisView> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.section),
+                  if (!model.analysisEnabled) ...[
+                    const AppMessage(
+                      message: 'Tính năng phân tích CI mới đang tạm tắt.',
+                      type: AppMessageType.info,
+                    ),
+                    const SizedBox(height: AppSpacing.medium),
+                  ],
                   if (model.actionBusy)
                     const AppLoading(
                       label: 'Đang gửi yêu cầu chạy lại…',
@@ -390,6 +421,51 @@ class _CiAnalysisViewState extends State<CiAnalysisView> {
     } else {
       model.cancelAnalysisPreview();
     }
+  }
+
+  void _openReport() {
+    final result = model.analysis;
+    final uid = model.ownerUid;
+    if (result == null ||
+        uid == null ||
+        !result.matches(model.repo, model.run)) {
+      return;
+    }
+    final configuration = model.configuration;
+    final report = CiReportSnapshot(
+      ownerUid: uid,
+      repo: model.repo,
+      run: model.run,
+      analysis: result,
+      exportedAt: DateTime.now().toUtc(),
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CiReportView(
+          report: report,
+          repository:
+              widget.reportRepository ??
+              CiReportRepository(
+                storage: CloudinaryReportStorageService(
+                  optionsProvider: () {
+                    final config = configuration?.config;
+                    const fallback = CloudinaryOptions();
+                    return CloudinaryOptions(
+                      cloudName: config?.cloudinaryCloudName.isNotEmpty == true
+                          ? config!.cloudinaryCloudName
+                          : fallback.cloudName,
+                      uploadPreset:
+                          config?.cloudinaryUploadPreset.isNotEmpty == true
+                          ? config!.cloudinaryUploadPreset
+                          : fallback.uploadPreset,
+                    );
+                  },
+                ),
+              ),
+          telemetry: model.telemetry,
+        ),
+      ),
+    );
   }
 
   void _openComment() => Navigator.of(

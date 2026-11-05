@@ -1,0 +1,16 @@
+version: 1
+id: a1204cd8-c69b-488a-be63-0e4471ad7584
+name: cloudinary
+slug: cloudinary
+protocol: http
+origin: api.cloudinary.com
+interceptRequests: true
+port: 4513
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true
+generatedFrom:
+  type: spec
+  mode: static
+  path: ../../specs/cloudinary-report-upload.yaml

@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Cloudinary unsigned PDF upload (Vista subset)
+  version: 1.0.0
+  description: External contract subset from Cloudinary Upload API; public preset, no API secret or Firebase token.
+servers:
+  - url: https://api.cloudinary.com
+paths:
+  /v1_1/{cloud}/raw/upload:
+    post:
+      operationId: uploadCiReport
+      parameters:
+        - in: path
+          name: cloud
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, upload_preset]
+              properties:
+                file: { type: string, format: binary }
+                upload_preset: { type: string }
+                public_id: { type: string }
+      responses:
+        '200':
+          description: Asset upload response; secure_url is required by this client.
+          content:
+            application/json:
+              example:
+                secure_url: https://res.cloudinary.com/demo/raw/upload/v1/vista-ci/reports/user-a/ci_1_10_2_1.pdf
+                public_id: vista-ci/reports/user-a/ci_1_10_2_1.pdf
+                resource_type: raw
+                bytes: 1024
+        '400':
+          description: Bad preset, parameters or file format.
+          content:
+            application/json:
+              example: { error: { message: Upload preset must be whitelisted for unsigned uploads } }
+        '429':
+          description: Rate limit reached.
+          content:
+            application/json:
+              example: { error: { message: Too many requests } }
+        '500':
+          description: Service failure; caller retains its PDF and does not retry automatically.
+          content:
+            application/json:
+              example: { error: { message: Internal server error } }

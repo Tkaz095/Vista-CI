@@ -1,5 +1,10 @@
 import 'dart:ui' show PointerDeviceKind;
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+import 'data/services/firebase_messaging_service.dart';
+import 'ui/notifications/notification_view_model.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -7,7 +12,11 @@ import 'firebase_options.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'app_runtime.dart';
+import 'core/telemetry/app_telemetry.dart';
+import 'ui/settings/app_config_view_model.dart';
 import 'data/repositories/auth_repository.dart';
 import 'ui/auth/auth_view.dart';
 import 'ui/auth/auth_view_model.dart';
@@ -18,16 +27,20 @@ import 'ui/widgets/app_header.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Object? failure;
+  AppRuntime? runtime;
   try {
-    await _initializeFirebase();
+    runtime = await _initializeFirebase();
   } catch (error) {
     failure = error;
   }
-  runApp(VistaCiApp(initializationFailed: failure != null));
+  runApp(VistaCiApp(initializationFailed: failure != null, runtime: runtime));
 }
 
-Future<void> _initializeFirebase() async {
+Future<AppRuntime> _initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  final runtime = AppRuntime();
+  await runtime.initialize();
   if (!kIsWeb &&
       [
         TargetPlatform.android,
@@ -42,6 +55,7 @@ Future<void> _initializeFirebase() async {
           : const AppleAppAttestWithDeviceCheckFallbackProvider(),
     );
   }
+  return runtime;
 }
 
 class VistaScrollBehavior extends MaterialScrollBehavior {
@@ -54,7 +68,12 @@ class VistaScrollBehavior extends MaterialScrollBehavior {
 }
 
 class VistaCiApp extends StatelessWidget {
-  const VistaCiApp({super.key, this.initializationFailed = false});
+  const VistaCiApp({
+    super.key,
+    this.initializationFailed = false,
+    this.runtime,
+  });
+  final AppRuntime? runtime;
   final bool initializationFailed;
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -64,7 +83,12 @@ class VistaCiApp extends StatelessWidget {
     theme: AppTheme.light,
     home: initializationFailed
         ? const InitializationError()
-        : const SessionGate(),
+        : SessionGate(
+            telemetry: runtime?.telemetry,
+            configuration: runtime?.configuration,
+            notifications: runtime?.notifications,
+            onDebugCrash: kDebugMode ? runtime?.crashes.testCrash : null,
+          ),
   );
 }
 
@@ -80,10 +104,17 @@ class _InitializationErrorState extends State<InitializationError> {
     if (pending) return;
     setState(() => pending = true);
     try {
-      await _initializeFirebase();
+      final runtime = await _initializeFirebase();
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const SessionGate()),
+          MaterialPageRoute<void>(
+            builder: (_) => SessionGate(
+              telemetry: runtime.telemetry,
+              configuration: runtime.configuration,
+              notifications: runtime.notifications,
+              onDebugCrash: kDebugMode ? runtime.crashes.testCrash : null,
+            ),
+          ),
         );
       }
     } catch (_) {
@@ -121,20 +152,34 @@ class _InitializationErrorState extends State<InitializationError> {
   );
 }
 
-class SessionGate extends StatefulWidget {
-  const SessionGate({super.key});
+class SessionGate extends StatelessWidget {
+  const SessionGate({
+    super.key,
+    this.repository,
+    this.telemetry,
+    this.configuration,
+    this.onDebugCrash,
+    this.notifications,
+  });
+  final NotificationViewModel? notifications;
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
+  final VoidCallback? onDebugCrash;
+  final AuthRepository? repository;
   @override
-  State<SessionGate> createState() => _SessionGateState();
-}
-
-class _SessionGateState extends State<SessionGate> {
-  final AuthViewModel viewModel = AuthViewModel(AuthRepository());
-  @override
-  void dispose() {
-    viewModel.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AuthView(viewModel: viewModel);
+  Widget build(BuildContext context) => Provider<AuthRepository>(
+    create: (_) => repository ?? AuthRepository(),
+    child: ChangeNotifierProvider<AuthViewModel>(
+      create: (context) => AuthViewModel(
+        context.read<AuthRepository>(),
+        telemetry: telemetry,
+        configuration: configuration,
+        notifications: notifications,
+        onDebugCrash: onDebugCrash,
+      ),
+      child: Consumer<AuthViewModel>(
+        builder: (_, viewModel, _) => AuthView(viewModel: viewModel),
+      ),
+    ),
+  );
 }

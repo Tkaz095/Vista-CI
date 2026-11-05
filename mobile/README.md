@@ -1,3 +1,9 @@
+> Báo cáo CI: [xuất PDF và cấu hình Cloudinary qua Firebase Remote Config](../docs/ci-report-cloudinary.md). Không cần Firebase Storage/billing cho luồng này.
+
+> Analytics/Crashlytics/Remote Config: xem [hướng dẫn cấu hình và demo](../docs/firebase-observability-setup.md) và [analytics plan](../docs/analytics-plan.md). Sau khi cập nhật code phải rebuild APK để thêm native plugins.
+
+> Cập nhật phiên/MVVM 04/11/2026: xem [architecture.md](../architecture.md). App dùng Provider, theo dõi Firebase Auth để khôi phục phiên và bảo vệ toàn bộ stack màn hình. Khi mở lại app, vào Profile → Kết nối lại GitHub để lấy GitHub token trong RAM; không cần đăng xuất phiên Vista. GitHub vẫn là phương thức đăng nhập hiện hành.
+
 # Vista CI Mobile
 
 The Flutter client for Vista CI.
@@ -313,3 +319,107 @@ Cảnh báo đọc/lưu phân tích là lỗi Firestore riêng với lỗi gọi
 | `AI_SERVER` | Lý do dịch vụ được rút gọn và che mẫu credentials, dùng để xác định lỗi chưa có loại riêng. |
 
 Không in GitHub token, App Check token, prompt hoặc phản hồi AI đầy đủ vào log để chẩn đoán. Chưa xác minh dịch vụ thật chỉ từ các test tự động; khi gặp lỗi cần giữ đúng mã/thông báo của lần gọi thực tế.
+
+### FCM và Notification Center — chỉ phía mobile
+
+Phạm vi code nằm hoàn toàn trong mobile/: nhận FCM, quyền Android 13+, đăng ký FID theo UID, Notification Center/đã đọc, notification hệ thống cả foreground và nhấn mở đúng workflow run/attempt. Không có workflow gửi tự động, script Admin, service-account private key hoặc Python trong phần triển khai này. Không cần cài Python để build/chạy app hay nhận push.
+
+Luồng MVVM: View → NotificationViewModel → MessagingSource / NotificationHistory / NotificationCache / SystemNotifications. Service bọc SDK Firebase và MethodChannel Android; View không gọi Firebase SDK. Phiên đăng nhập xác minh profile trước khi bind UID. Đổi tài khoản/mất quyền dọn state, route và khay thông báo. GitHub token chỉ ở RAM: sau cold start có thể phải kết nối lại rồi app tiếp tục đúng run/attempt.
+
+Trong Repository → Lịch sử chạy → Thông báo CI có failures (mặc định), results, all, off. Đây là tùy chọn lưu vào Firestore; **phía gửi tương lai phải đọc và áp dụng tùy chọn**, mobile không tự phát hiện mọi CI mới hoặc tự gửi FCM khi app đã đóng. Không thêm Remote Config key mới.
+
+#### Cấu hình và thử nhận push
+
+1. Dừng app, chạy lại flutter run để cập nhật Android native.
+2. Project Firebase chính vista-ci, package com.vista.vista_mobile; giữ cấu hình Firebase và App Check như hiện tại. Không dùng project AI.
+3. Đăng nhập → chuông → Bật thông báo, cấp quyền Android 13+. Thiết bị/emulator cần Google Play services. Nếu Android không hỏi lại, bật tại Settings → Apps → Vista CI → Notifications.
+4. Publish các Rules notifications/devices/ciSubscriptions bên dưới trên Firebase Console, giữ nguyên Rules khác. File firebase/firestore.rules ở ngoài mobile không được sửa trong phạm vi này.
+5. Trong Notification Center của bản debug, sao chép FCM Installation ID. SDK firebase_messaging 17 dùng register/onRegistered/unregister; không trộn với API token deprecated.
+6. Dùng công cụ gửi thử của Firebase Console có hỗ trợ FID. Nếu giao diện chỉ nhận legacy registration token, nguồn gửi bên ngoài cần dùng FCM/Admin SDK hỗ trợ FID; không thêm private key vào app. Khi soạn notification, thêm custom data như mẫu bên dưới, dùng UID và repo/run/attempt thật.
+7. Thử app foreground, background và gạt khỏi recent apps, rồi nhấn thông báo để đối chiếu run/attempt. Không dùng Android Settings Force stop. Khóa màn hình có thể nhận, tắt nguồn không nhận ngay.
+
+```json
+{
+  "notification_id": "run_123456_987654321_1_started",
+  "uid": "FIREBASE_UID",
+  "type": "workflow_run",
+  "repo_id": "123456",
+  "repo_full_name": "owner/repository",
+  "run_id": "987654321",
+  "attempt": "1",
+  "phase": "started"
+}
+```
+
+Notification payload cần title/body để Android hiển thị ở nền. Tin thiếu UID bị bỏ qua; target sai không được dùng để mở URL tùy ý. Gửi completed với ID riêng có hậu tố _completed và phase completed để giữ hai mốc lịch sử. Foreground dùng tag ci_{repoId}_{runId}_{attempt}, ID 0; để thay cùng một thẻ khi background, phía gửi cũng phải đặt Android notification tag tương ứng. Chỉ đặt custom data trong Console không tự cấu hình Android tag.
+
+App lưu những tin callback nhận được theo UID: cache SharedPreferencesAsync và Firestore notifications. Có thể giữ tối đa 200 mục trong cache; Firestore tải 100 mục mới nhất. **Lịch sử đầy đủ cho tin bị gạt đi khi app đã đóng cần phía gửi ghi inbox trước khi push**; chỉ phía mobile không bảo đảm bắt được mọi tin hệ điều hành đã hiển thị. Không có nguồn gửi tự động hoặc private-repo allowlist trong code hiện tại.
+
+#### Rules cần Publish thủ công
+
+Chèn các match sau vào bên trong match /users/{userId}, cùng cấp với projects. Dùng các helper activeUser() và text() hiện có. Giữ rule ciAnalyses và các rule đã publish khác. Chưa publish Console trong lần chỉnh code này.
+
+```rules
+      // Per-user notification inbox. Publishers use Admin SDK; a device may
+      // also persist a directly received FCM message into its own inbox.
+      match /notifications/{notificationId} {
+        function isOwner() {
+          return activeUser() && request.auth.uid == userId;
+        }
+        function validNotification() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['notification_id', 'uid', 'title', 'body', 'received_at', 'read'])
+            && d.keys().hasOnly(['notification_id', 'uid', 'title', 'body', 'received_at', 'read',
+              'type', 'repo_id', 'repo_full_name', 'run_id', 'attempt', 'phase'])
+            && notificationId.matches('^[A-Za-z0-9_-]{1,128}$')
+            && d.notification_id == notificationId && d.uid == userId
+            && (!('phase' in d) || d.phase in ['started', 'completed'])
+            && text(d.title, 1, 200) && text(d.body, 0, 1000)
+            && text(d.received_at, 1, 40) && d.read == false
+            && (!('type' in d) || (d.type == 'workflow_run'
+              && d.repo_id is string && d.repo_id.matches('^[1-9][0-9]{0,15}$')
+              && d.run_id is string && d.run_id.matches('^[1-9][0-9]{0,15}$')
+              && d.attempt is string && d.attempt.matches('^[1-9][0-9]{0,15}$')
+              && text(d.repo_full_name, 3, 201)
+              && d.repo_full_name.matches('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')));
+        }
+        allow read: if isOwner();
+        allow create: if isOwner() && validNotification();
+        allow update: if isOwner()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+          && request.resource.data.read == true;
+        allow delete: if false;
+      }
+      // A preference alone does not authorize delivery. The trusted publisher
+      // also checks that this repo is still saved in one of the user's projects.
+      match /ciSubscriptions/{repoId} {
+        function isOwner() {
+          return activeUser() && request.auth.uid == userId;
+        }
+        allow read, delete: if isOwner();
+        allow create, update: if isOwner()
+          && repoId.matches('^[1-9][0-9]{0,15}$')
+          && request.resource.data.keys().hasAll(['repoId', 'repoFullName', 'mode', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['repoId', 'repoFullName', 'mode', 'updatedAt'])
+          && request.resource.data.repoId == repoId
+          && text(request.resource.data.repoFullName, 3, 201)
+          && request.resource.data.repoFullName.matches('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
+          && request.resource.data.mode in ['failures', 'results', 'all', 'off']
+          && request.resource.data.updatedAt == request.time;
+      }
+      match /devices/{installationId} {
+        function isOwner() {
+          return activeUser() && request.auth.uid == userId;
+        }
+        allow read, delete: if isOwner();
+        allow create, update: if isOwner()
+          && installationId.matches('^[a-f0-9]{48}$')
+          && request.resource.data.keys().hasAll(['fid', 'platform', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['fid', 'platform', 'updatedAt'])
+          && text(request.resource.data.fid, 1, 128)
+          && request.resource.data.platform == 'android'
+          && request.resource.data.updatedAt == request.time;
+      }
+```
+
+Test trong mobile/: flutter analyze --no-pub và flutter test --no-pub. Các test Dart dùng fake messaging/history/preferences, MethodChannel mock và HTTP GitHub mock; không cần Python hoặc Node sender. Test/build không chứng minh push thật đã hiển thị trên điện thoại.

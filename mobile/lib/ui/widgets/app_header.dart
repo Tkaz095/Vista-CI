@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// The header for top-level screens. Notifications stay disabled until connected.
+/// The header for top-level screens.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   const AppHeader({
     super.key,
     this.showNotifications = true,
     this.onNotificationsPressed,
     this.actions = const [],
+    this.unreadCount = 0,
   });
 
   final bool showNotifications;
+  final int unreadCount;
   final VoidCallback? onNotificationsPressed;
   final List<Widget> actions;
 
@@ -41,10 +43,14 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       if (showNotifications)
         IconButton(
           tooltip: onNotificationsPressed == null
-              ? 'Thông báo (chưa triển khai)'
+              ? 'Thông báo chưa sẵn sàng'
               : 'Thông báo',
           onPressed: onNotificationsPressed,
-          icon: const Icon(Icons.notifications_outlined),
+          icon: Badge(
+            isLabelVisible: unreadCount > 0,
+            label: Text(unreadCount > 99 ? '99+' : '$unreadCount'),
+            child: const Icon(Icons.notifications_outlined),
+          ),
         ),
       ...actions,
       const SizedBox(width: AppSpacing.medium),

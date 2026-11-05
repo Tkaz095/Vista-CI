@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/project.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
 import '../../data/models/workflow_run.dart';
 import '../../data/repositories/github_actions_repository.dart';
 import '../theme/app_theme.dart';
@@ -13,6 +15,7 @@ import '../widgets/app_stack_header.dart';
 import '../widgets/workflow_run_summary.dart';
 import '../widgets/workflow_status_badge.dart';
 import 'repository_runs_view_model.dart';
+import '../notifications/ci_notification_preferences_panel.dart';
 import 'workflow_run_detail_view.dart';
 
 class RepositoryRunsView extends StatefulWidget {
@@ -22,11 +25,17 @@ class RepositoryRunsView extends StatefulWidget {
     required this.projectName,
     required this.repository,
     required this.accessToken,
+    this.telemetry,
+    this.configuration,
+    this.ownerUid,
   });
   final ProjectRepo repo;
   final String projectName;
   final GitHubActionsRepository repository;
   final String? accessToken;
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
+  final String? ownerUid;
 
   @override
   State<RepositoryRunsView> createState() => _RepositoryRunsViewState();
@@ -95,6 +104,14 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
               children: [
                 _repositoryInfo(context),
                 const SizedBox(height: AppSpacing.page),
+                if (widget.ownerUid != null) ...[
+                  CiNotificationPreferencesPanel(
+                    uid: widget.ownerUid!,
+                    repo: widget.repo,
+                    telemetry: widget.telemetry,
+                  ),
+                  const SizedBox(height: AppSpacing.page),
+                ],
                 Text('Trạng thái', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.small),
                 Wrap(
@@ -144,7 +161,7 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.medium),
-                if (model.loading && model.runs.isEmpty)
+                if (model.state.isLoading && model.runs.isEmpty)
                   const AppLoading(label: 'Đang tải lịch sử chạy…')
                 else ...[
                   if (model.loading && !model.loadingMore) ...[
@@ -172,13 +189,11 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
                       ),
                     _runCard(context, model.runs[index]),
                   ],
-                  if (model.error.isNotEmpty) ...[
+                  if (model.state.hasError) ...[
                     AppMessage(message: model.error),
                     const SizedBox(height: AppSpacing.medium),
                   ],
-                  if (model.hasLoaded &&
-                      model.runs.isEmpty &&
-                      model.error.isEmpty)
+                  if (model.hasLoaded && model.state.isEmpty)
                     AppEmptyState(
                       message: model.filter == RunFilter.all
                           ? 'Repository chưa có lần chạy GitHub Actions.'
@@ -286,6 +301,9 @@ class _RepositoryRunsViewState extends State<RepositoryRunsView> {
               run: run,
               repository: widget.repository,
               accessToken: widget.accessToken,
+              telemetry: widget.telemetry,
+              configuration: widget.configuration,
+              ownerUid: widget.ownerUid,
             ),
           ),
         ),

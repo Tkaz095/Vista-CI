@@ -154,6 +154,29 @@ class GitHubActionsRepository {
     ),
   );
 
+  Future<WorkflowRun> getRunAttempt(
+    String? token,
+    ProjectRepo repo,
+    int runId,
+    int attempt,
+  ) => _withConnection(() async {
+    final response = await _github.fetchRunAttempt(
+      token ?? '',
+      repo.fullName,
+      runId,
+      attempt,
+    );
+    final run = WorkflowRun.fromJson(response.data);
+    final remoteRepo = response.data['repository'] as Map<String, dynamic>?;
+    if (run.id != runId ||
+        run.attempt != attempt ||
+        remoteRepo == null ||
+        remoteRepo['id'] != repo.id) {
+      throw const GitHubException('Run hoặc repository không khớp thông báo.');
+    }
+    return run;
+  });
+
   Future<WorkflowRun> getLatestRun(
     String? token,
     ProjectRepo repo,

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_profile.dart';
+import '../models/auth_identity.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_storage_service.dart';
 import '../services/firestore_profile_service.dart';
@@ -13,8 +14,11 @@ class AuthRepository {
 
   String? get githubAccessToken => _auth.githubAccessToken;
 
-  Future<UserProfile> signInWithGitHub() async {
-    final identity = await _auth.signInWithGitHub();
+  Stream<AuthIdentity?> authStateChanges() => _auth.authStateChanges();
+
+  Future<AuthIdentity> signInWithGitHub() => _auth.signInWithGitHub();
+
+  Stream<UserProfile> watchProfile(AuthIdentity identity) async* {
     final name = identity.displayName.trim();
     final currentUser = FirebaseAuth.instance.currentUser;
     final authPhotoUrl = currentUser?.photoURL;
@@ -26,17 +30,22 @@ class AuthRepository {
       photoUrl: authPhotoUrl,
     );
 
-    final data = await _profiles.getOrCreateProfile(
+    await _profiles.getOrCreateProfile(
       identity.uid,
       initialData.toFirestore(),
+      isCurrent: () => _auth.isCurrent(identity.uid),
     );
 
-    return UserProfile.fromFirestore(
-      uid: identity.uid,
-      email: identity.email,
-      data: data,
-      authPhotoUrl: authPhotoUrl,
-    );
+    yield* _profiles
+        .watchProfile(identity.uid)
+        .map(
+          (data) => UserProfile.fromFirestore(
+            uid: identity.uid,
+            email: identity.email,
+            data: data,
+            authPhotoUrl: authPhotoUrl,
+          ),
+        );
   }
 
   /// Uploads avatar image to Firebase Storage, then synchronizes photoUrl with Firestore & Firebase Auth.

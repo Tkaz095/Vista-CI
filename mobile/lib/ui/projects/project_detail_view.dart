@@ -49,6 +49,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
       repository,
       repositories: project?.repositories ?? [],
       accessToken: widget.viewModel.accessToken,
+      telemetry: widget.viewModel.telemetry,
     );
     actions.load();
   }
@@ -86,6 +87,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
 
   Future<void> _deleteProject(BuildContext context, Project project) async {
     final confirmed = await showDialog<bool>(
+      useRootNavigator: false,
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa project?'),
@@ -293,6 +295,9 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
               projectName: project?.name ?? 'Project',
               repository: repository,
               accessToken: widget.viewModel.accessToken,
+              telemetry: widget.viewModel.telemetry,
+              configuration: widget.viewModel.configuration,
+              ownerUid: widget.viewModel.uid,
             ),
           ),
         ),

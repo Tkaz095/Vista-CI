@@ -2,6 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../core/state/async_state.dart';
+import '../../core/telemetry/app_telemetry.dart';
+import '../settings/app_config_view_model.dart';
+
 import '../../data/models/ci_analysis.dart';
 import '../../data/repositories/ci_analysis_repository.dart';
 
@@ -17,7 +21,56 @@ class WorkflowRunViewModel extends ChangeNotifier {
     required this.run,
     required this.accessToken,
     CiAnalysisRepository? analysisRepository,
-  }) : _analyses = analysisRepository ?? CiAnalysisRepository(_repository);
+    this.telemetry,
+    this.configuration,
+    this.ownerUid,
+  }) : _analyses = analysisRepository ?? CiAnalysisRepository(_repository) {
+    configuration?.addListener(_configurationChanged);
+    telemetry?.event(
+      AppEvent.workflowDetailView,
+      parameters: {'attempt': run.attempt},
+    );
+  }
+
+  final AppTelemetry? telemetry;
+  final AppConfigViewModel? configuration;
+  final String? ownerUid;
+  bool get analysisEnabled => configuration?.config.analysisEnabled ?? true;
+  void _configurationChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  AsyncState<WorkflowRunDetails?> get state => AsyncState.resolve(
+    data: details,
+    loading: loading,
+    empty: details == null || details!.jobs.isEmpty,
+    error: error,
+  );
+  AsyncState<CiAnalysis?> get analysisState => AsyncState.resolve(
+    data: analysis,
+    loading: readingAnalysis || analyzing,
+    empty: analysis == null,
+    error: analysisError,
+  );
+  AsyncState<CiAnalysisInput?> get preparationState => AsyncState.resolve(
+    data: preparedAnalysis,
+    loading: preparingAnalysis,
+    empty: preparedAnalysis == null,
+    error: analysisError,
+  );
+  AsyncState<List<GitHubPullRequest>> get pullRequestsState =>
+      AsyncState.resolve(
+        data: List.unmodifiable(pullRequests),
+        loading: loadingPullRequests,
+        empty: pullRequests.isEmpty,
+        error: commentError,
+      );
+  AsyncState<WorkflowLog?> logState(int jobId) => AsyncState.resolve(
+    data: logs[jobId],
+    loading: loadingJobs.contains(jobId),
+    empty: logs[jobId] == null || logs[jobId]!.text.isEmpty,
+    error: logErrors[jobId] ?? '',
+  );
 
   final GitHubActionsRepository _repository;
   final ProjectRepo repo;
@@ -66,7 +119,8 @@ class WorkflowRunViewModel extends ChangeNotifier {
         (job) => job.conclusion == 'failure' || job.conclusion == 'timed_out',
       ) ??
       false;
-  bool get canAnalyze => canRerun && hasFailedJobs && !readingAnalysis;
+  bool get canAnalyze =>
+      analysisEnabled && canRerun && hasFailedJobs && !readingAnalysis;
 
   int? get initialJobId {
     final jobs = details?.jobs ?? [];
@@ -115,7 +169,8 @@ class WorkflowRunViewModel extends ChangeNotifier {
               .map((id) => loadJobLog(id, refresh: true)),
         );
       }
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) telemetry?.nonFatal(failure, stack, AppOperation.runRead);
       if (_disposed) return;
       error = failure is GitHubException
           ? failure.message
@@ -162,7 +217,8 @@ class WorkflowRunViewModel extends ChangeNotifier {
     try {
       final result = await _repository.getJobLog(accessToken, repo, jobId);
       if (!_disposed && _jobVersions[jobId] == version) logs[jobId] = result;
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) telemetry?.nonFatal(failure, stack, AppOperation.logRead);
       if (_disposed || _jobVersions[jobId] != version) return;
       logErrors[jobId] = failure is GitHubException
           ? failure.message
@@ -220,7 +276,10 @@ class WorkflowRunViewModel extends ChangeNotifier {
       if (_disposed || version != _analysisVersion) return;
       analysis = saved;
       analysisWarning = '';
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.analysisRead);
+      }
       if (_disposed || version != _analysisVersion) return;
       analysisWarning = _message(
         failure,
@@ -246,7 +305,10 @@ class WorkflowRunViewModel extends ChangeNotifier {
       if (_disposed || version != _analysisVersion) return null;
       preparedAnalysis = input;
       return input;
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.analysisPrepare);
+      }
       if (_disposed || version != _analysisVersion) return null;
       analysisError = _message(failure, 'Chưa chuẩn bị được log để phân tích.');
       return null;
@@ -272,6 +334,7 @@ class WorkflowRunViewModel extends ChangeNotifier {
     }
     final version = ++_analysisVersion;
     analyzing = true;
+    telemetry?.event(AppEvent.analysisStart);
     analysisError = '';
     notifyListeners();
     try {
@@ -283,18 +346,25 @@ class WorkflowRunViewModel extends ChangeNotifier {
         );
       }
       analysis = result;
+      telemetry?.event(AppEvent.analysisComplete);
       analysisWarning = '';
       preparedAnalysis = null;
       notifyListeners();
       try {
         await _analyses.save(result);
-      } catch (failure) {
+      } catch (failure, stack) {
+        if (!_disposed) {
+          telemetry?.nonFatal(failure, stack, AppOperation.analysisSave);
+        }
         if (!_disposed && version == _analysisVersion) {
           analysisWarning =
               'Đã phân tích nhưng chưa lưu được vào Firestore. ${_message(failure, 'Kết quả đang được giữ trên màn hình này.')}';
         }
       }
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.analysisRun);
+      }
       if (_disposed || version != _analysisVersion) return;
       analysisError = _message(
         failure,
@@ -319,10 +389,15 @@ class WorkflowRunViewModel extends ChangeNotifier {
       await _repository.rerun(accessToken, repo, run, failedOnly: failedOnly);
       if (_disposed) return false;
       accepted = true;
+      telemetry?.event(
+        AppEvent.rerunRequested,
+        parameters: {'failed_only': failedOnly ? 1 : 0},
+      );
       waitingForRerun = true;
       actionMessage =
           'Đã gửi yêu cầu chạy lại trên commit ${run.sha}. Kéo xuống để theo dõi attempt mới.';
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) telemetry?.nonFatal(failure, stack, AppOperation.rerun);
       if (_disposed) return false;
       actionError = _message(failure, 'Chưa gửi được yêu cầu chạy lại.');
       if (failure is GitHubException && failure.outcomeUnknown) {
@@ -364,7 +439,10 @@ class WorkflowRunViewModel extends ChangeNotifier {
         actionError = '';
         actionMessage = 'Đang xem attempt ${latest.attempt}.';
       }
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.attemptRead);
+      }
       if (!_disposed) {
         error = _message(
           failure,
@@ -407,7 +485,10 @@ class WorkflowRunViewModel extends ChangeNotifier {
       if (selectedPullRequest == null && result.length == 1) {
         selectedPullRequest = result.single;
       }
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.pullRequestRead);
+      }
       if (!_disposed && version == _analysisVersion) {
         commentError = _message(failure, 'Chưa tìm được PR liên quan.');
       }
@@ -468,8 +549,12 @@ class WorkflowRunViewModel extends ChangeNotifier {
       }
       if (_disposed || version != _analysisVersion) return;
       postedComments[pull.number] = comment;
+      telemetry?.event(AppEvent.commentSent);
       uncertainComments.remove(pull.number);
-    } catch (failure) {
+    } catch (failure, stack) {
+      if (!_disposed) {
+        telemetry?.nonFatal(failure, stack, AppOperation.commentWrite);
+      }
       if (_disposed || version != _analysisVersion) return;
       commentError = _message(
         failure,
@@ -489,6 +574,7 @@ class WorkflowRunViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    configuration?.removeListener(_configurationChanged);
     super.dispose();
   }
 }

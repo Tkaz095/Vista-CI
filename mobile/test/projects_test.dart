@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vista_mobile/data/models/github_repo.dart';
+import 'package:vista_mobile/core/state/async_state.dart';
 import 'package:vista_mobile/data/models/project.dart';
 import 'package:vista_mobile/data/repositories/project_repository.dart';
 import 'package:vista_mobile/data/services/github_service.dart';
@@ -185,6 +186,32 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test(
+    'Resource state distinguishes empty, loading, stale error and recovery',
+    () async {
+      await model.loadProjects();
+      expect(model.projectsState.status, LoadStatus.empty);
+      repository.pendingLoad = Completer<List<Project>>();
+      final pending = model.loadProjects();
+      expect(model.projectsState.status, LoadStatus.loading);
+      repository.pendingLoad!.complete([testProject]);
+      await pending;
+      final snapshot = model.projectsState;
+      expect(snapshot.status, LoadStatus.success);
+      expect(() => snapshot.data!.clear(), throwsUnsupportedError);
+      repository.pendingLoad = null;
+      repository.loadError = StateError('Offline');
+      await model.loadProjects();
+      expect(model.projectsState.status, LoadStatus.error);
+      expect(model.projectsState.data!.single.id, testProject.id);
+      repository.loadError = null;
+      repository.savedProjects = [];
+      await model.loadProjects();
+      expect(model.projectsState.status, LoadStatus.empty);
+      expect(snapshot.data!.single.id, testProject.id);
+    },
+  );
 
   test(
     'Projects load without a GitHub token and use the signed-in UID',
