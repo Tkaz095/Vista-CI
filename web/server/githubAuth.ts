@@ -10,6 +10,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore'
+import { getRemoteConfig } from 'firebase-admin/remote-config'
 
 export class ApiError extends Error {
   readonly status: number
@@ -85,6 +86,7 @@ function admin() {
   return app
 }
 export const database = () => getFirestore(admin())
+export const remoteConfig = () => getRemoteConfig(admin())
 export async function authenticate(req: IncomingMessage) {
   const bearer = req.headers.authorization?.match(/^Bearer (\S+)$/)?.[1]
   if (!bearer)
@@ -132,6 +134,25 @@ export async function authenticate(req: IncomingMessage) {
   if (user.disabled || profile.data()?.isActive !== true || profile.data()?.role !== 'user')
     throw new ApiError(403, 'VISTA_ACCESS_DENIED', 'Hồ sơ Vista chưa có quyền sử dụng.')
   return { uid, githubId }
+}
+export async function authenticateAdmin(req: IncomingMessage) {
+  const bearer = req.headers.authorization?.match(/^Bearer ([^\s]+)$/)?.[1]
+  if (!bearer)
+    throw new ApiError(401, 'FIREBASE_AUTH_REQUIRED', 'Vui lòng đăng nhập tài khoản admin.')
+  let uid: string
+  try {
+    uid = (await getAuth(admin()).verifyIdToken(bearer, true)).uid
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    throw new ApiError(401, 'FIREBASE_AUTH_REQUIRED', 'Phiên đăng nhập không còn hợp lệ.')
+  }
+  const [user, profile] = await Promise.all([
+    getAuth(admin()).getUser(uid),
+    database().doc(`users/${uid}`).get(),
+  ])
+  if (user.disabled || profile.data()?.isActive !== true || profile.data()?.role !== 'admin')
+    throw new ApiError(403, 'ADMIN_ACCESS_DENIED', 'Tài khoản này chưa được cấp quyền admin.')
+  return { uid }
 }
 export function sameOrigin(req: IncomingMessage, native = false) {
   if (native && !req.headers.origin && req.headers['x-vista-client'] === 'flutter') return

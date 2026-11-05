@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import githubJobLog from './api/github-job-log'
 import githubSession from './api/github-session'
 import githubData from './api/github-data'
+import adminApi from './api/admin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -22,6 +23,7 @@ export default defineConfig(({ mode }) => {
     '/api/github-job-log': githubJobLog,
     '/api/github-session': githubSession,
     '/api/github-data': githubData,
+    '/api/admin': adminApi,
   }
   return {
     server: { port: 5173, strictPort: true },

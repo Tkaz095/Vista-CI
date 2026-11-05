@@ -102,8 +102,8 @@ export function logout(): Promise<void> {
   return signOut(auth)
 }
 
-// Create missing profiles and normalize legacy roles to user. Activation and
-// other existing fields are never changed. Concurrent clients re-read on retry.
+// Create missing profiles and normalize only the legacy member role. Admin
+// profiles must never be downgraded by the regular-user sign-in flow.
 async function ensureOwnProfile(user: User, current: () => boolean): Promise<void> {
   const reference = doc(db, 'users', user.uid)
   const name = user.displayName?.trim() || user.email?.split('@')[0]?.trim() || 'Thành viên Vista'
@@ -112,7 +112,7 @@ async function ensureOwnProfile(user: User, current: () => boolean): Promise<voi
     const existing = await transaction.get(reference)
     if (!current()) return
     if (existing.exists()) {
-      if (existing.data().isActive === true && existing.data().role !== 'user') {
+      if (existing.data().isActive === true && existing.data().role === 'member') {
         transaction.update(reference, { role: 'user' })
       }
       return
@@ -172,7 +172,7 @@ export function observeSession(onChange: (session: AuthSession) => void): () => 
             return
           }
           const data = snapshot.data()
-          if (!snapshot.exists() || (data?.isActive === true && data.role !== 'user')) {
+          if (!snapshot.exists() || (data?.isActive === true && data.role === 'member')) {
             if (provisioningAttempted) return
             provisioningAttempted = true
             waitForServer()
@@ -202,7 +202,7 @@ export function observeSession(onChange: (session: AuthSession) => void): () => 
           if (data.role !== 'user') {
             onChange({
               status: 'blocked',
-              message: 'Chưa chuyển được hồ sơ về user. Bấm Kiểm tra lại sau khi cập nhật Rules.',
+              message: 'Tài khoản này không có quyền vào khu vực người dùng. Nếu đây là tài khoản admin, hãy mở /admin.',
             })
             return
           }

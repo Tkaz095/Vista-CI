@@ -56,7 +56,7 @@ export function LoginScreen({ onPreview }: { onPreview: () => void }) {
         {fieldErrors.password && <p className="auth-field-error" id="password-error">{fieldErrors.password}</p>}
         <button className="auth-secondary" type="submit" disabled={submitting}>{submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
       </form>
-      <div className="auth-demo"><button type="button" className="auth-text" disabled={submitting} onClick={onPreview}>Xem giao diện với dữ liệu mẫu →</button><p>Chế độ mẫu không dùng tài khoản hoặc dữ liệu dự án thật.</p></div>
+      <div className="auth-demo"><button type="button" className="auth-text" disabled={submitting} onClick={onPreview}>Xem giao diện với dữ liệu mẫu →</button><p>Chế độ mẫu không dùng tài khoản hoặc dữ liệu dự án thật.</p><a className="admin-login-link" href="/admin">Đăng nhập quản trị →</a></div>
     </section>
   </main>
 }
