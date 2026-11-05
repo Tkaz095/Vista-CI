@@ -9,6 +9,7 @@ import '../settings/app_config_view_model.dart';
 import '../settings/app_settings_panel.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_text_field.dart';
 import 'profile_view_model.dart';
 
 class ProfileView extends StatefulWidget {
@@ -183,33 +184,56 @@ class _ProfileViewState extends State<ProfileView> {
     final controller = TextEditingController(text: _viewModel.profile.displayName);
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Đổi tên hiển thị'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 100,
-          decoration: const InputDecoration(
-            hintText: 'Nhập tên hiển thị mới',
-            border: OutlineInputBorder(),
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final colors = theme.colorScheme;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Hủy'),
+          backgroundColor: colors.surface,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.badge_outlined, color: colors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text('Đổi tên hiển thị'),
+            ],
           ),
-          FilledButton(
-            onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isEmpty) return;
-              Navigator.of(dialogContext).pop();
-              await _viewModel.updateDisplayName(newName);
-            },
-            child: const Text('Lưu'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: AppTextField(
+              controller: controller,
+              label: 'Tên hiển thị',
+              hint: 'Nhập tên hiển thị mới…',
+              prefixIcon: Icons.person_outline,
+              maxLength: 100,
+            ),
           ),
-        ],
-      ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final newName = controller.text.trim();
+                if (newName.isEmpty) return;
+                Navigator.of(dialogContext).pop();
+                await _viewModel.updateDisplayName(newName);
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -352,6 +376,21 @@ class _ProfileViewState extends State<ProfileView> {
               ),
             ),
 
+            if (widget.onReconnectGitHub != null) ...[
+              const SizedBox(height: AppSpacing.page),
+              Text(
+                'Phiên Vista đã được khôi phục. Kết nối lại GitHub để tải repository và CI.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.medium),
+              AppButton(
+                label: 'Kết nối lại GitHub',
+                onPressed: widget.onReconnectGitHub,
+                isLoading: widget.isSigningOut,
+                icon: Icons.link,
+              ),
+            ],
+
             const SizedBox(height: AppSpacing.page),
 
             // Thông tin chi tiết hệ thống
@@ -461,21 +500,6 @@ class _ProfileViewState extends State<ProfileView> {
             ),
 
             const SizedBox(height: AppSpacing.page),
-
-            if (widget.onReconnectGitHub != null) ...[
-              Text(
-                'Phiên Vista đã được khôi phục. Kết nối lại GitHub để tải repository và CI.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.medium),
-              AppButton(
-                label: 'Kết nối lại GitHub',
-                onPressed: widget.onReconnectGitHub,
-                isLoading: widget.isSigningOut,
-                icon: Icons.link,
-              ),
-              const SizedBox(height: AppSpacing.page),
-            ],
 
             if (widget.configuration != null || widget.telemetry != null)
               AppSettingsPanel(

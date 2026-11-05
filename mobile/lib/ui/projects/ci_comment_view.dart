@@ -165,6 +165,7 @@ class _CiCommentViewState extends State<CiCommentView> {
                     const SizedBox(height: AppSpacing.medium),
                     AppTextField(
                       label: 'Nội dung comment',
+                      prefixIcon: Icons.code_rounded,
                       controller: draft,
                       maxLines: null,
                       maxLength: 30000,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/models/project.dart';
 import '../theme/app_theme.dart';
@@ -118,7 +119,19 @@ class _SelectRepositoriesViewState extends State<SelectRepositoriesView> {
                           const SizedBox(height: AppSpacing.page),
                           AppTextField(
                             label: 'Tìm repo',
-                            prefixIcon: Icons.search,
+                            hint: 'Nhập tên repository GitHub…',
+                            isSearch: true,
+                            prefixIcon: Icons.search_rounded,
+                            suffixIcon: model.repositorySearch.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    tooltip: 'Xóa tìm kiếm',
+                                    onPressed: () {
+                                      HapticFeedback.selectionClick();
+                                      model.setRepositorySearch('');
+                                    },
+                                  )
+                                : null,
                             initialValue: model.repositorySearch,
                             onChanged: model.setRepositorySearch,
                           ),

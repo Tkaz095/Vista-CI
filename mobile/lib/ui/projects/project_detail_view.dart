@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/models/project.dart';
 import '../../data/models/workflow_run.dart';
@@ -34,6 +35,7 @@ class ProjectDetailView extends StatefulWidget {
 class _ProjectDetailViewState extends State<ProjectDetailView> {
   final GitHubActionsRepository repository = GitHubActionsRepository();
   late final ProjectDetailViewModel actions;
+  bool _isDescriptionExpanded = false;
 
   Project? get project {
     final matches = widget.viewModel.projects.where(
@@ -201,18 +203,6 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(AppSpacing.page),
                       children: [
-                        if (project.description.isNotEmpty) ...[
-                          Text(
-                            project.description,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                          const SizedBox(height: AppSpacing.page),
-                        ],
                         if (widget.viewModel.saving) ...[
                           const AppLoading(
                             label: 'Đang xử lý project…',
@@ -221,26 +211,39 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                           const SizedBox(height: AppSpacing.medium),
                         ],
                         if (widget.viewModel.saveError.isNotEmpty) ...[
-                          const SizedBox(height: 16),
                           AppMessage(message: widget.viewModel.saveError),
+                          const SizedBox(height: AppSpacing.medium),
                         ],
                         if (widget.viewModel.projectError.isNotEmpty) ...[
-                          const SizedBox(height: 16),
                           AppMessage(
                             message: widget.viewModel.projectError,
                             type: AppMessageType.warning,
                           ),
+                          const SizedBox(height: AppSpacing.medium),
                         ],
-                        Text(
-                          'Repository đang theo dõi (${project.repositories.length})',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.hub_outlined,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Repository đang theo dõi (${project.repositories.length})',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
                               ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.page),
+                        const SizedBox(height: AppSpacing.medium),
                         if (project.repositories.isEmpty)
                           const AppEmptyState(
                             message: 'Project chưa có repo. Mở menu ba chấm và chọn “Chỉnh sửa” để thêm.',
@@ -265,6 +268,10 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                               variant: AppButtonVariant.secondary,
                             ),
                         ],
+                        if (project.description.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.page),
+                          _buildDescriptionCard(context, project),
+                        ],
                       ],
                     ),
             ),
@@ -274,168 +281,337 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
     },
   );
 
+  Widget _buildDescriptionCard(BuildContext context, Project project) {
+    if (project.description.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final isLong = project.description.contains('\n') || project.description.length > 120;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.page),
+      padding: const EdgeInsets.all(AppSpacing.card),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.7),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer.withValues(alpha: isDark ? 0.35 : 0.6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.notes_rounded, size: 16, color: colors.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Mô tả project',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            project.description,
+            maxLines: _isDescriptionExpanded ? null : 3,
+            overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurface,
+              height: 1.4,
+            ),
+          ),
+          if (isLong) ...[
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _isDescriptionExpanded = !_isDescriptionExpanded);
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isDescriptionExpanded ? 'Thu gọn' : 'Xem thêm',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _isDescriptionExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _repositoryCard(BuildContext context, ProjectRepo repo) {
     final run = actions.latestRuns[repo.id];
     final error = actions.errors[repo.id];
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final failed =
         run != null &&
         [
           WorkflowState.failure,
           WorkflowState.timedOut,
         ].contains(WorkflowState.fromGitHub(run.status, run.conclusion));
-    return Card(
+
+    return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.medium),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => RepositoryRunsView(
-              repo: repo,
-              projectName: project?.name ?? 'Project',
-              repository: repository,
-              accessToken: widget.viewModel.accessToken,
-              telemetry: widget.viewModel.telemetry,
-              configuration: widget.viewModel.configuration,
-              ownerUid: widget.viewModel.uid,
-            ),
-          ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: failed
+              ? colors.error.withValues(alpha: 0.5)
+              : colors.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.7),
+          width: 0.8,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.card),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final heading = Row(
-                    children: [
-                      Icon(
-                        Icons.source_outlined,
-                        color: failed
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: AppSpacing.small),
-                      Expanded(
-                        child: Wrap(
-                          spacing: AppSpacing.small,
-                          runSpacing: AppSpacing.small,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Tooltip(
-                              message: repo.fullName,
-                              child: Text(
-                                repo.fullName.split('/').last,
-                                style: theme.textTheme.titleLarge,
-                              ),
-                            ),
-                            if (run != null && run.branch.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: failed
-                                      ? theme.colorScheme.errorContainer
-                                      : theme.colorScheme.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
+        boxShadow: AppShadows.card,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => RepositoryRunsView(
+                  repo: repo,
+                  projectName: project?.name ?? 'Project',
+                  repository: repository,
+                  accessToken: widget.viewModel.accessToken,
+                  telemetry: widget.viewModel.telemetry,
+                  configuration: widget.viewModel.configuration,
+                  ownerUid: widget.viewModel.uid,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.card),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final heading = Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: failed
+                                ? colors.errorContainer.withValues(alpha: 0.5)
+                                : colors.primaryContainer.withValues(alpha: isDark ? 0.35 : 0.5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.source_outlined,
+                            size: 18,
+                            color: failed ? colors.error : colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.small + 2),
+                        Expanded(
+                          child: Wrap(
+                            spacing: AppSpacing.small,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Tooltip(
+                                message: repo.fullName,
                                 child: Text(
-                                  run.branch,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontFamily: 'GeistMono',
-                                    color: failed
-                                        ? theme.colorScheme.onErrorContainer
-                                        : theme.colorScheme.onSurfaceVariant,
+                                  repo.fullName.split('/').last,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                          ],
+                              if (run != null && run.branch.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: failed
+                                        ? colors.errorContainer
+                                        : colors.surfaceContainerLow,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    run.branch,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontFamily: 'monospace',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: failed
+                                          ? colors.onErrorContainer
+                                          : colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                  if (run == null) return heading;
-                  final badge = WorkflowStatusBadge(
-                    status: run.status,
-                    conclusion: run.conclusion,
-                  );
-                  if (constraints.maxWidth >= 280 &&
-                      MediaQuery.textScalerOf(context).scale(14) <= 18) {
-                    return Row(
+                      ],
+                    );
+                    if (run == null) return heading;
+                    final badge = WorkflowStatusBadge(
+                      status: run.status,
+                      conclusion: run.conclusion,
+                    );
+                    if (constraints.maxWidth >= 280 &&
+                        MediaQuery.textScalerOf(context).scale(14) <= 18) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: heading),
+                          const SizedBox(width: AppSpacing.small),
+                          badge,
+                        ],
+                      );
+                    }
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: heading),
-                        const SizedBox(width: AppSpacing.small),
+                        heading,
+                        const SizedBox(height: AppSpacing.small),
                         badge,
                       ],
                     );
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  },
+                ),
+                if (run != null) ...[
+                  const SizedBox(height: AppSpacing.medium),
+                  Text(
+                    run.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: failed ? colors.error : colors.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.control),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      heading,
-                      const SizedBox(height: AppSpacing.small),
-                      badge,
-                    ],
-                  );
-                },
-              ),
-              if (run != null) ...[
-                const SizedBox(height: AppSpacing.medium),
-                Text(
-                  run.title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: failed
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.control),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    if (run.sha.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.commit,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            run.sha.length > 7
-                                ? run.sha.substring(0, 7)
-                                : run.sha,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontFamily: 'GeistMono',
-                              color: theme.colorScheme.onSurfaceVariant,
+                      if (run.sha.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.commit,
+                              size: 18,
+                              color: colors.onSurfaceVariant,
                             ),
-                          ),
-                        ],
-                      ),
-                    if (run.createdAt != null)
-                      WorkflowRunTime(date: run.createdAt!),
-                  ],
-                ),
-              ],
-              if (error != null) ...[
-                const SizedBox(height: AppSpacing.medium),
-                AppMessage(message: error),
-              ],
-              if (run == null && error == null)
-                const Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.medium),
-                  child: AppEmptyState(
-                    message: 'Chưa có lần chạy GitHub Actions.',
+                            const SizedBox(width: 4),
+                            Text(
+                              run.sha.length > 7
+                                  ? run.sha.substring(0, 7)
+                                  : run.sha,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontFamily: 'monospace',
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (run.createdAt != null)
+                        WorkflowRunTime(date: run.createdAt!),
+                    ],
                   ),
-                ),
-            ],
+                ],
+                if (error != null) ...[
+                  const SizedBox(height: AppSpacing.medium),
+                  AppMessage(message: error),
+                ],
+                if (run == null && error == null)
+                  Container(
+                    margin: const EdgeInsets.only(top: AppSpacing.medium),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerLow.withValues(alpha: isDark ? 0.35 : 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: isDark ? 0.25 : 0.4),
+                        width: 0.6,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.history_toggle_off_rounded,
+                            size: 18,
+                            color: colors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chưa có lần chạy GitHub Actions.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Chạm để xem lịch sử hoặc chạy workflow trên GitHub.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/telemetry/app_telemetry.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_message.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_theme_controller.dart';
 import 'app_config_view_model.dart';
 import 'diagnostics_view_model.dart';
 
@@ -75,6 +77,42 @@ class _AppSettingsPanelState extends State<AppSettingsPanel> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Giao diện ứng dụng',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.medium),
+          ListenableBuilder(
+            listenable: AppThemeController.instance,
+            builder: (context, _) {
+              final current = AppThemeController.instance.themeMode;
+              return SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text('Hệ thống'),
+                    icon: Icon(Icons.brightness_auto_rounded),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text('Sáng'),
+                    icon: Icon(Icons.light_mode_rounded),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text('Tối'),
+                    icon: Icon(Icons.dark_mode_rounded),
+                  ),
+                ],
+                selected: {current},
+                onSelectionChanged: (newSelection) {
+                  HapticFeedback.selectionClick();
+                  AppThemeController.instance.setThemeMode(newSelection.first);
+                },
+              );
+            },
+          ),
+          const SizedBox(height: AppSpacing.page),
           if (configuration != null) ...[
             Text(
               'Cấu hình ứng dụng',
