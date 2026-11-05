@@ -34,14 +34,8 @@ The analytics tab reports Firestore account/workspace totals and daily workspace
 
 The server's Firebase Admin credential must have Firestore read access and the Firebase Remote Config Admin permission to publish settings. Keep the credential server-side using the existing `.env.local` options; never put it in `VITE_` variables or the browser bundle.
 
-## Workspace, GitHub session và log
+## Phạm vi web
 
-Xem `../docs/project/20-workspace-navigation-session-logs.md`. Dùng `npm run dev` để có cả web và API tải log local. API source trong `api/github-job-log.ts` được dùng chung với Vercel Function sau này; không nằm trong static dist. Web giữ kết nối GitHub trong cùng tab tối đa24h, cần reconnect một lần sau cập nhật cơ chế lưu. Agent chưa triển khai.
+Web chỉ dành cho quản trị viên. Giao diện đăng nhập GitHub, workspace, repository và CI/CD của user đã được gỡ khỏi `web/src`; thành viên sử dụng ứng dụng Flutter trong `mobile`.
 
-## Kết nối GitHub tự gia hạn — bước21
-
-Xem `../docs/project/21-github-auto-refresh.md`. Cần cấu hình `.env.local` theo `.env.example`, thêm callback backend vào OAuth App và cấp Firebase Admin credential cho server. `npm run dev` phục vụ cả web lẫn API, cố định port5173. GitHub token lưu mã hóa trong Firestore, không ở sessionStorage; mô tả session24h phía trên là mốc20 cũ. Chưa cấu hình bên ngoài thì backend sẽ báo lỗi setup và chưa dùng luồng GitHub mới được.
-
-## Tự cập nhật và lỗi backend — bước23
-
-Xem `../docs/project/23-auto-update-and-backend-setup.md`. Run đang chạy cập nhật mỗi15 giây, job/step mỗi10 giây; khi hoàn tất/chưa có run dùng60 giây. Tạm dừng khi tab ẩn/offline hoặc gặp lỗi cần sửa cấu hình/quyền. Lỗi `Backend chưa cấu hình FIREBASE_PROJECT_ID` cần điền env server và restart Vite, logout/login không sửa được.
+Các API GitHub phía server được giữ lại để không làm gián đoạn client đang sử dụng chúng. Web admin có Tổng quan (số liệu Firestore), Cấu hình ứng dụng (Remote Config) và Giám sát ứng dụng. Mục Giám sát gọi API server đọc Cloud Monitoring và BigQuery export Crashlytics/Sessions; cần bật nguồn và cấp IAM theo hướng dẫn [26-admin-monitoring](../docs/project/26-admin-monitoring.md). Không còn dữ liệu mẫu. Không có thống kê Google Analytics trên web.
