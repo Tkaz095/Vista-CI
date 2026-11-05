@@ -36,7 +36,7 @@ export class AdminApiError extends Error {
 
 async function request<T>(
   user: User,
-  resource: 'overview' | 'config',
+  resource: 'overview' | 'config' | 'monitoring',
   method: 'GET' | 'PUT' = 'GET',
   body?: unknown,
 ): Promise<T> {
@@ -70,3 +70,6 @@ export const saveRemoteConfig = (user: User, snapshot: RemoteConfigSnapshot) =>
     version: snapshot.version,
     parameters: snapshot.values,
   })
+
+export const loadAdminMonitoring = (user: User) =>
+  request<import('../../../shared/adminMonitoring').AdminMonitoring>(user, 'monitoring')

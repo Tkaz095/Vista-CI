@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
     'FIREBASE_CLIENT_EMAIL',
     'FIREBASE_PRIVATE_KEY',
     'GOOGLE_APPLICATION_CREDENTIALS',
+    'MONITORING_FIREBASE_APP_ID',
+    'CRASHLYTICS_BIGQUERY_TABLE',
+    'SESSIONS_BIGQUERY_TABLE',
+    'BIGQUERY_LOCATION',
   ]) {
     if (!process.env[name] && env[name]) process.env[name] = env[name]
   }

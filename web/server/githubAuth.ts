@@ -87,6 +87,12 @@ function admin() {
 }
 export const database = () => getFirestore(admin())
 export const remoteConfig = () => getRemoteConfig(admin())
+// Server-only OAuth credential; never returned to the browser.
+export async function googleCloudAccessToken() {
+  const credential = admin().options.credential
+  if (!credential) throw new ApiError(503, 'SERVER_SETUP_REQUIRED', 'Thiếu credential cho backend Firebase.')
+  return (await credential.getAccessToken()).access_token
+}
 export async function authenticate(req: IncomingMessage) {
   const bearer = req.headers.authorization?.match(/^Bearer (\S+)$/)?.[1]
   if (!bearer)

@@ -9,6 +9,8 @@ import {
   remoteConfig,
 } from '../server/githubAuth.js'
 
+import { loadMonitoring } from '../server/adminMonitoring.js'
+
 const configDefaults = {
   ci_analysis_enabled: 'true',
   cloudinary_cloud_name: '',
@@ -131,6 +133,10 @@ export default async function adminApi(req: IncomingMessage, res: ServerResponse
   try {
     await authenticateAdmin(req)
     const resource = new URL(req.url ?? '/', 'http://localhost').searchParams.get('resource')
+    if (resource === 'monitoring' && req.method === 'GET') {
+      json(res, 200, await loadMonitoring())
+      return
+    }
     if (resource === 'overview' && req.method === 'GET') {
       json(res, 200, await overview())
       return
