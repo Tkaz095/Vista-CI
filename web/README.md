@@ -39,3 +39,11 @@ The server's Firebase Admin credential must have Firestore read access and the F
 Web chỉ dành cho quản trị viên. Giao diện đăng nhập GitHub, workspace, repository và CI/CD của user đã được gỡ khỏi `web/src`; thành viên sử dụng ứng dụng Flutter trong `mobile`.
 
 Các API GitHub phía server được giữ lại để không làm gián đoạn client đang sử dụng chúng. Web admin có Tổng quan (số liệu Firestore), Cấu hình ứng dụng (Remote Config) và Giám sát ứng dụng. Mục Giám sát gọi API server đọc Cloud Monitoring và BigQuery export Crashlytics/Sessions; cần bật nguồn và cấp IAM theo hướng dẫn [26-admin-monitoring](../docs/project/26-admin-monitoring.md). Không còn dữ liệu mẫu. Không có thống kê Google Analytics trên web.
+
+## Vercel: tương thích dependency Firebase Admin
+
+`package.json` khóa riêng `jose` bên dưới `jwks-rsa` về `5.10.0` bằng npm overrides. Firebase Admin 14 kéo `jwks-rsa` 4 dùng CommonJS `require('jose')`, trong khi jose 6 chỉ cung cấp ESM; trên runtime Vercel điều này đã gây `ERR_REQUIRE_ESM` trước khi API admin kiểm tra token.
+
+Giữ cả `package.json` và `package-lock.json` trong lần deploy. Không sửa tay `node_modules`, không đổi Firebase credentials để xử lý lỗi nạp module. Override chỉ áp dụng cho dependency của `jwks-rsa`; cần đánh giá bỏ override khi upstream đã sửa tương thích ESM.
+
+Sau khi merge bản sửa, tạo deployment từ commit mới của `dev` (redeploy một deployment cũ vẫn dùng lockfile cũ). Lỗi runtime chỉ được xác nhận đã hết khi API trên Vercel trả JSON thay cho `FUNCTION_INVOCATION_FAILED`; việc đăng nhập admin thành công cần kiểm tra riêng trên deployment đó.
