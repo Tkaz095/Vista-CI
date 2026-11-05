@@ -21,11 +21,13 @@ import 'data/repositories/auth_repository.dart';
 import 'ui/auth/auth_view.dart';
 import 'ui/auth/auth_view_model.dart';
 import 'ui/theme/app_theme.dart';
+import 'ui/theme/app_theme_controller.dart';
 import 'ui/widgets/app_loading.dart';
 import 'ui/widgets/app_header.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppThemeController.instance.loadTheme();
   Object? failure;
   AppRuntime? runtime;
   try {
@@ -46,14 +48,16 @@ Future<AppRuntime> _initializeFirebase() async {
         TargetPlatform.android,
         TargetPlatform.iOS,
       ].contains(defaultTargetPlatform)) {
-    await FirebaseAppCheck.instance.activate(
-      providerAndroid: kDebugMode
-          ? const AndroidDebugProvider()
-          : const AndroidPlayIntegrityProvider(),
-      providerApple: kDebugMode
-          ? const AppleDebugProvider()
-          : const AppleAppAttestWithDeviceCheckFallbackProvider(),
-    );
+    try {
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: kDebugMode
+            ? const AndroidDebugProvider()
+            : const AndroidPlayIntegrityProvider(),
+        providerApple: kDebugMode
+            ? const AppleDebugProvider()
+            : const AppleAppAttestWithDeviceCheckFallbackProvider(),
+      );
+    } catch (_) {}
   }
   return runtime;
 }
@@ -76,19 +80,24 @@ class VistaCiApp extends StatelessWidget {
   final AppRuntime? runtime;
   final bool initializationFailed;
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'Vista CI',
-    debugShowCheckedModeBanner: false,
-    scrollBehavior: const VistaScrollBehavior(),
-    theme: AppTheme.light,
-    home: initializationFailed
-        ? const InitializationError()
-        : SessionGate(
-            telemetry: runtime?.telemetry,
-            configuration: runtime?.configuration,
-            notifications: runtime?.notifications,
-            onDebugCrash: kDebugMode ? runtime?.crashes.testCrash : null,
-          ),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: AppThemeController.instance,
+    builder: (context, _) => MaterialApp(
+      title: 'Vista CI',
+      debugShowCheckedModeBanner: false,
+      scrollBehavior: const VistaScrollBehavior(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: AppThemeController.instance.themeMode,
+      home: initializationFailed
+          ? const InitializationError()
+          : SessionGate(
+              telemetry: runtime?.telemetry,
+              configuration: runtime?.configuration,
+              notifications: runtime?.notifications,
+              onDebugCrash: kDebugMode ? runtime?.crashes.testCrash : null,
+            ),
+    ),
   );
 }
 

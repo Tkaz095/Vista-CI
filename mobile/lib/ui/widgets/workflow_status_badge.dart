@@ -85,21 +85,27 @@ class WorkflowStatusBadge extends StatelessWidget {
       ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: foreground.withValues(alpha: 0.25),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: foreground),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: foreground),
+          const SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.labelSmall
-                  ?.copyWith(color: foreground),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ),
         ],

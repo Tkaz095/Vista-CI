@@ -165,6 +165,7 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                           label: 'Tên project',
                           hint: 'Ví dụ: Mobile CI Platform',
                           helperText: 'Dùng tên giúp bạn dễ nhận diện project.',
+                          prefixIcon: Icons.drive_file_rename_outline_rounded,
                           controller: nameController,
                           enabled: !model.saving,
                           maxLength: Project.maxNameLength,
@@ -181,6 +182,7 @@ class _ProjectFormViewState extends State<ProjectFormView> {
                         AppTextField(
                           label: 'Mô tả (không bắt buộc)',
                           hint: 'Project này dành cho việc gì?',
+                          prefixIcon: Icons.notes_rounded,
                           controller: descriptionController,
                           enabled: !model.saving,
                           maxLength: Project.maxDescriptionLength,
