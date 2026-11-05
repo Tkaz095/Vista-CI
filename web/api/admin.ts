@@ -6,6 +6,7 @@ import {
   authenticateAdmin,
   database,
   json,
+  logAdminFailure,
   remoteConfig,
 } from '../server/githubAuth.js'
 
@@ -176,6 +177,7 @@ export default async function adminApi(req: IncomingMessage, res: ServerResponse
       json(res, error.status, { code: error.code, message: error.message })
       return
     }
+    logAdminFailure(error, `admin-api:${req.method ?? 'unknown'}`)
     if (res.writableEnded || res.destroyed) return
     json(res, 503, {
       code: 'ADMIN_BACKEND_UNAVAILABLE',
