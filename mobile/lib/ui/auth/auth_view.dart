@@ -191,6 +191,9 @@ class LoginView extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final theme = Theme.of(context);
+          final colors = theme.colorScheme;
+          final isDark = theme.brightness == Brightness.dark;
+
           return SingleChildScrollView(
             child: Center(
               child: ConstrainedBox(
@@ -199,7 +202,10 @@ class LoginView extends StatelessWidget {
                   minHeight: constraints.maxHeight,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.page),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.page,
+                    vertical: AppSpacing.medium,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -207,72 +213,167 @@ class LoginView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const SizedBox(height: AppSpacing.section),
-                          Image.asset(
-                            'assets/logo/logo.png',
-                            height: 80,
-                            cacheHeight: 320,
-                            excludeFromSemantics: true,
+                          // Hero Logo with glowing aura
+                          Center(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        colors.primary.withValues(
+                                          alpha: isDark ? 0.35 : 0.18,
+                                        ),
+                                        colors.primary.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: colors.outlineVariant.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: AppShadows.card,
+                                  ),
+                                  child: Image.asset(
+                                    'assets/logo/logo.png',
+                                    height: 54,
+                                    width: 54,
+                                    cacheHeight: 216,
+                                    excludeFromSemantics: true,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.page),
                           Text(
                             'Vista',
                             textAlign: TextAlign.center,
-                            style: theme.textTheme.displaySmall,
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.8,
+                            ),
                           ),
-                          const SizedBox(height: AppSpacing.control),
+                          const SizedBox(height: AppSpacing.small),
                           Text(
                             'Quản lý project và repository GitHub của bạn.',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: colors.onSurfaceVariant,
                             ),
                           ),
+                          const SizedBox(height: AppSpacing.page),
+
+                          // Value prop pills
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              _ValuePill(
+                                icon: Icons.bolt,
+                                label: 'Real-time CI',
+                                color: colors.primary,
+                              ),
+                              _ValuePill(
+                                icon: Icons.notifications_active_outlined,
+                                label: 'Push Alerts',
+                                color: const Color(0xFF0F766E),
+                              ),
+                            ],
+                          ),
+
                           const SizedBox(height: AppSpacing.section),
-                          Text(
-                            'Đăng nhập Vista',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: AppSpacing.medium),
-                          AppButton(
-                            label: 'Tiếp tục với GitHub',
-                            loadingLabel: 'Đang xác thực…',
-                            isLoading: viewModel.busy,
-                            onPressed: viewModel.signInWithGitHub,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: theme.colorScheme.onSurface,
-                              foregroundColor: theme.colorScheme.surface,
+
+                          // Login Card Container
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.card),
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: colors.outlineVariant.withValues(
+                                  alpha: 0.6,
+                                ),
+                                width: 0.8,
+                              ),
+                              boxShadow: AppShadows.card,
                             ),
-                            iconWidget: Image.asset(
-                              'assets/logo/github-logo.png',
-                              width: 20,
-                              height: 20,
-                              color: theme.colorScheme.surface,
-                              excludeFromSemantics: true,
-                            ),
-                          ),
-                          if (viewModel.actionMessage.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.medium),
-                            AppMessage(message: viewModel.actionMessage),
-                          ],
-                          const SizedBox(height: AppSpacing.medium),
-                          Text(
-                            'Vista tự tạo hồ sơ khi bạn đăng nhập lần đầu.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Đăng nhập Vista',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.medium),
+                                AppButton(
+                                  label: 'Tiếp tục với GitHub',
+                                  loadingLabel: 'Đang xác thực…',
+                                  isLoading: viewModel.busy,
+                                  onPressed: viewModel.signInWithGitHub,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: colors.onSurface,
+                                    foregroundColor: colors.surface,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  iconWidget: Image.asset(
+                                    'assets/logo/github-logo.png',
+                                    width: 20,
+                                    height: 20,
+                                    color: colors.surface,
+                                    excludeFromSemantics: true,
+                                  ),
+                                ),
+                                if (viewModel.actionMessage.isNotEmpty) ...[
+                                  const SizedBox(height: AppSpacing.medium),
+                                  AppMessage(message: viewModel.actionMessage),
+                                ],
+                                const SizedBox(height: AppSpacing.medium),
+                                Text(
+                                  'Vista tự tạo hồ sơ khi bạn đăng nhập lần đầu.',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.section),
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.section,
+                          bottom: AppSpacing.small,
+                        ),
                         child: Text(
                           'Để hiển thị cả repo riêng tư, GitHub sẽ yêu cầu quyền repo '
                           '(gồm đọc và ghi). Vista hiện chỉ đọc danh sách repo.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: colors.onSurfaceVariant,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -286,4 +387,46 @@ class LoginView extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ValuePill extends StatelessWidget {
+  const _ValuePill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -27,9 +27,7 @@ class FirebaseAuthService {
   );
 
   Future<AuthIdentity> signInWithGitHub() async {
-    final provider = GithubAuthProvider()
-      ..addScope('repo')
-      ..setCustomParameters({'prompt': 'select_account'});
+    final provider = GithubAuthProvider()..addScope('repo');
     final current = _auth.currentUser;
     final result = current == null
         ? await _auth.signInWithProvider(provider)

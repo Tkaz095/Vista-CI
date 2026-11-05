@@ -309,8 +309,17 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
     final theme = Theme.of(context);
     final result = model.analysis;
     final preparing = model.preparingAnalysis || model.analyzing;
-    return Card(
+    return Container(
       margin: EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.colorScheme.tertiary.withValues(alpha: 0.25),
+          width: 1.0,
+        ),
+        boxShadow: AppShadows.card,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.card),
         child: Column(
@@ -318,15 +327,25 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.auto_awesome_outlined,
-                  color: theme.colorScheme.tertiary,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    color: theme.colorScheme.tertiary,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.small),
                 Expanded(
                   child: Text(
                     'Phân tích lỗi CI',
-                    style: theme.textTheme.titleMedium,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -350,6 +369,10 @@ class _WorkflowRunDetailViewState extends State<WorkflowRunDetailView> {
                     'Xem tóm tắt lỗi, bằng chứng và hướng xử lý.',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.4,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             const SizedBox(height: AppSpacing.medium),
             AppButton(

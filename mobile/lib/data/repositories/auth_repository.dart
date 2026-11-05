@@ -27,7 +27,6 @@ class AuthRepository {
       displayName: name.isEmpty
           ? 'Vista User'
           : String.fromCharCodes(name.runes.take(100)),
-      photoUrl: authPhotoUrl,
     );
 
     await _profiles.getOrCreateProfile(

@@ -79,7 +79,6 @@ class UserProfile {
       'displayName': displayName,
       'role': role.toFirestore(),
       'isActive': isActive,
-      if (photoUrl != null) 'photoUrl': photoUrl,
     };
   }
 }
@@ -102,7 +101,6 @@ class CreateProfileData {
       'displayName': displayName,
       'role': role.toFirestore(),
       'isActive': isActive,
-      if (photoUrl != null) 'photoUrl': photoUrl,
     };
   }
 }
