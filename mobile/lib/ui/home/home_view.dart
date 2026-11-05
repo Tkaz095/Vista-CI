@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories/project_repository.dart';
 import '../action/action_view.dart';
-import '../notifications/notification_center_view.dart';
 import '../auth/auth_view_model.dart';
+import '../notifications/notification_center_view.dart';
 import '../profile/profile_view.dart';
 import '../projects/projects_view.dart';
 import '../projects/projects_view_model.dart';
@@ -55,14 +55,13 @@ class _HomeViewState extends State<HomeView> {
                       builder: (context, _) => AppHeader(
                         unreadCount:
                             widget.viewModel.notifications!.unreadCount,
-                        onNotificationsPressed: () =>
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => NotificationCenterView(
-                                  model: widget.viewModel.notifications!,
-                                ),
-                              ),
+                        onNotificationsPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => NotificationCenterView(
+                              model: widget.viewModel.notifications!,
                             ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -79,12 +78,10 @@ class _HomeViewState extends State<HomeView> {
                   if (widget.viewModel.actionMessage.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.all(AppSpacing.medium),
-                      child: AppMessage(
-                        message: widget.viewModel.actionMessage,
-                      ),
+                      child: AppMessage(message: widget.viewModel.actionMessage),
                     ),
                   Expanded(
-                    // Keep the project list and its scroll position when switching tabs.
+                    // Keep each tab's state while switching between tabs.
                     child: IndexedStack(
                       index: selectedTab.index,
                       children: [
@@ -92,6 +89,8 @@ class _HomeViewState extends State<HomeView> {
                         const ActionView(),
                         ProfileView(
                           profile: widget.profile,
+                          repository: widget.viewModel.repository,
+                          onProfileUpdated: widget.viewModel.updateProfile,
                           configuration: widget.viewModel.configuration,
                           telemetry: widget.viewModel.telemetry,
                           onDebugCrash: widget.viewModel.onDebugCrash,

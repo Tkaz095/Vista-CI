@@ -55,6 +55,7 @@ class AuthViewModel extends ChangeNotifier {
   AsyncState<UserProfile> _state = const AsyncState.loading();
   AsyncState<UserProfile> get state => _state;
   UserProfile? get profile => _state.data;
+  AuthRepository get repository => _repository;
   bool busy = false;
   String actionMessage = '';
   int sessionRevision = 0;
@@ -206,6 +207,11 @@ class AuthViewModel extends ChangeNotifier {
       telemetry?.event(AppEvent.logout);
     }
   }, AppOperation.logout);
+
+  void updateProfile(UserProfile updatedProfile) {
+    if (_disposed) return;
+    _publish(AsyncState.success(updatedProfile));
+  }
 
   Future<void> _run(
     Future<void> Function() action,
