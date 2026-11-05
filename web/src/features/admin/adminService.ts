@@ -21,6 +21,15 @@ export interface RemoteConfigSnapshot {
   version: string
 }
 
+export interface RemoteConfigUpdate {
+  version: string
+  values: {
+    ci_analysis_enabled: boolean
+    cloudinary_cloud_name: string
+    cloudinary_upload_preset: string
+  }
+}
+
 export class AdminApiError extends Error {
   readonly status: number
 
@@ -57,7 +66,7 @@ async function request<T>(
     throw new AdminApiError(
       typeof result?.message === 'string'
         ? result.message
-        : 'Không thể kết nối Firebase admin. Vui lòng thử lại.',
+        : `API admin trả HTTP ${response.status} mà không có thông báo JSON. Kiểm tra Runtime Logs của deployment.`,
       response.status,
     )
   return result as T
@@ -65,7 +74,7 @@ async function request<T>(
 
 export const loadAdminOverview = (user: User) => request<AdminOverview>(user, 'overview')
 export const loadRemoteConfig = (user: User) => request<RemoteConfigSnapshot>(user, 'config')
-export const saveRemoteConfig = (user: User, snapshot: RemoteConfigSnapshot) =>
+export const saveRemoteConfig = (user: User, snapshot: RemoteConfigUpdate) =>
   request<RemoteConfigSnapshot>(user, 'config', 'PUT', {
     version: snapshot.version,
     parameters: snapshot.values,

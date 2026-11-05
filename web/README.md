@@ -47,3 +47,11 @@ Các API GitHub phía server được giữ lại để không làm gián đoạ
 Giữ cả `package.json` và `package-lock.json` trong lần deploy. Không sửa tay `node_modules`, không đổi Firebase credentials để xử lý lỗi nạp module. Override chỉ áp dụng cho dependency của `jwks-rsa`; cần đánh giá bỏ override khi upstream đã sửa tương thích ESM.
 
 Sau khi merge bản sửa, tạo deployment từ commit mới của `dev` (redeploy một deployment cũ vẫn dùng lockfile cũ). Lỗi runtime chỉ được xác nhận đã hết khi API trên Vercel trả JSON thay cho `FUNCTION_INVOCATION_FAILED`; việc đăng nhập admin thành công cần kiểm tra riêng trên deployment đó.
+
+### Admin quay lại màn hình login trên Preview
+
+Backend phân biệt token không hợp lệ (401) với credential/IAM/mạng lỗi (503). UI giữ màn hình lỗi thay vì tự đăng xuất để không che mất nguyên nhân; mọi dữ liệu admin vẫn bị chặn đến khi server xác minh thành công.
+
+Vercel Preview và Production có env riêng. Kiểm tra đủ `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` trong đúng environment; tên `CLIENT_EMAIL` hoặc `PRIVATE_KEY` không được backend đọc. Đường dẫn `GOOGLE_APPLICATION_CREDENTIALS` của máy local không tồn tại trên Vercel. Sau thay đổi env cần deployment mới. Không dùng việc đăng nhập Firebase client thành công làm bằng chứng Admin SDK server có credential đúng.
+
+Request lưu Remote Config gửi `ci_analysis_enabled` dạng boolean; response đọc vẫn giữ chuỗi theo Firebase template. Kiểu request/response được tách riêng để tránh HTTP 400 khi xuất bản cấu hình. Runtime Logs ghi `[vista-admin]` kèm phase/mã lỗi; không ghi token, key hoặc nguyên văn thông báo SDK.

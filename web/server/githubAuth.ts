@@ -141,6 +141,26 @@ export async function authenticate(req: IncomingMessage) {
     throw new ApiError(403, 'VISTA_ACCESS_DENIED', 'Hồ sơ Vista chưa có quyền sử dụng.')
   return { uid, githubId }
 }
+// Log only error codes: SDK messages can contain credential/request details.
+export function logAdminFailure(error: unknown, phase: string) {
+  const raw = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'unknown'
+  const code = /^[a-zA-Z0-9_/-]{1,80}$/.test(raw) ? raw : 'unknown'
+  console.error('[vista-admin]', { phase, code })
+  return code
+}
+
+function adminBackendError(error: unknown, phase: string) {
+  const code = logAdminFailure(error, phase)
+  const permission = ['auth/insufficient-permission', 'permission-denied', '7'].includes(code)
+  return new ApiError(
+    503,
+    permission ? 'FIREBASE_ADMIN_PERMISSION_DENIED' : 'FIREBASE_BACKEND_UNAVAILABLE',
+    permission
+      ? `Service account backend thiếu quyền đọc Firebase Auth hoặc Firestore (${code}). Kiểm tra IAM của đúng service account.`
+      : `Backend chưa xác minh được Firebase (${code}). Kiểm tra FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY trong đúng môi trường Preview/Production.`,
+  )
+}
+
 export async function authenticateAdmin(req: IncomingMessage) {
   const bearer = req.headers.authorization?.match(/^Bearer ([^\s]+)$/)?.[1]
   if (!bearer)
@@ -150,12 +170,28 @@ export async function authenticateAdmin(req: IncomingMessage) {
     uid = (await getAuth(admin()).verifyIdToken(bearer, true)).uid
   } catch (error) {
     if (error instanceof ApiError) throw error
-    throw new ApiError(401, 'FIREBASE_AUTH_REQUIRED', 'Phiên đăng nhập không còn hợp lệ.')
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
+    if ([
+      'auth/id-token-expired', 'auth/id-token-revoked', 'auth/invalid-id-token',
+      'auth/argument-error', 'auth/user-disabled', 'auth/user-not-found',
+    ].includes(code)) {
+      logAdminFailure(error, 'verify-token')
+      throw new ApiError(401, 'FIREBASE_AUTH_REQUIRED', `Phiên đăng nhập không hợp lệ (${code}). Kiểm tra project Firebase của web/backend; đăng xuất rồi đăng nhập lại.`)
+    }
+    throw adminBackendError(error, 'verify-token')
   }
-  const [user, profile] = await Promise.all([
-    getAuth(admin()).getUser(uid),
-    database().doc(`users/${uid}`).get(),
-  ])
+  let user, profile
+  try {
+    ;[user, profile] = await Promise.all([
+      getAuth(admin()).getUser(uid),
+      database().doc(`users/${uid}`).get(),
+    ])
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'auth/user-not-found')
+      throw new ApiError(401, 'FIREBASE_AUTH_REQUIRED', 'Tài khoản không còn tồn tại. Vui lòng đăng xuất.')
+    throw adminBackendError(error, 'read-admin-profile')
+  }
   if (user.disabled || profile.data()?.isActive !== true || profile.data()?.role !== 'admin')
     throw new ApiError(403, 'ADMIN_ACCESS_DENIED', 'Tài khoản này chưa được cấp quyền admin.')
   return { uid }

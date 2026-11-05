@@ -138,7 +138,7 @@ function ConfigPanel({
       const saved = await saveRemoteConfig(user, {
         version: snapshot.version,
         values: {
-          ci_analysis_enabled: String(enabled),
+          ci_analysis_enabled: enabled,
           cloudinary_cloud_name: cloudName,
           cloudinary_upload_preset: uploadPreset,
         },
@@ -212,10 +212,7 @@ export function AdminConsole() {
     }).catch((cause: unknown) => {
       if (!active) return
       setAccessError(message(cause))
-      if (cause instanceof AdminApiError && cause.status === 401) {
-        void signOut(auth)
-        return
-      }
+      // Keep the error visible; only an explicit sign-out should return to login.
       setAccess(
         cause instanceof AdminApiError && cause.status === 403
           ? 'denied'
