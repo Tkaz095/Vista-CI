@@ -5,7 +5,6 @@ import '../home/home_view.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_message.dart';
-import '../widgets/app_loading.dart';
 import '../widgets/app_header.dart';
 import 'auth_view_model.dart';
 import '../notifications/notification_center_view.dart';
@@ -24,6 +23,7 @@ class AuthView extends StatelessWidget {
         case LoadStatus.empty:
           return LoginView(viewModel: viewModel);
         case LoadStatus.loading:
+          return const _SplashLoadingView();
         case LoadStatus.error:
           return Scaffold(
             appBar: const AppHeader(showNotifications: false),
@@ -31,16 +31,12 @@ class AuthView extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(AppSpacing.page),
                 children: [
-                  if (viewModel.state.isLoading)
-                    const AppLoading(label: 'Đang xác minh phiên đăng nhập…')
-                  else ...[
-                    AppMessage(message: viewModel.state.message),
-                    const SizedBox(height: AppSpacing.medium),
-                    AppButton(
-                      label: 'Kiểm tra lại',
-                      onPressed: viewModel.retrySession,
-                    ),
-                  ],
+                  AppMessage(message: viewModel.state.message),
+                  const SizedBox(height: AppSpacing.medium),
+                  AppButton(
+                    label: 'Kiểm tra lại',
+                    onPressed: viewModel.retrySession,
+                  ),
                   if (viewModel.actionMessage.isNotEmpty)
                     AppMessage(message: viewModel.actionMessage),
                   const SizedBox(height: AppSpacing.medium),
@@ -426,6 +422,99 @@ class _ValuePill extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SplashLoadingView extends StatelessWidget {
+  const _SplashLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 3),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          colors.primary.withValues(
+                            alpha: isDark ? 0.40 : 0.22,
+                          ),
+                          colors.primary.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.8),
+                        width: 1.2,
+                      ),
+                      boxShadow: AppShadows.card,
+                    ),
+                    child: Image.asset(
+                      'assets/logo/logo.png',
+                      height: 64,
+                      width: 64,
+                      cacheHeight: 256,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.page),
+              Text(
+                'Vista CI',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Continuous Integration for GitHub Actions',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(flex: 2),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(height: AppSpacing.medium),
+              Text(
+                'Đang xác minh phiên đăng nhập…',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(flex: 3),
+            ],
+          ),
+        ),
       ),
     );
   }
