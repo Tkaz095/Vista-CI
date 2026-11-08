@@ -90,17 +90,13 @@ class FakeAuthRepository implements AuthRepository {
   }) async => 'https://example.com/avatar.jpg';
 
   @override
-  Future<void> removeAvatar({
-    required String uid,
-    String? currentUrl,
-  }) async {}
+  Future<void> removeAvatar({required String uid, String? currentUrl}) async {}
 
   @override
   Future<void> updateDisplayName({
     required String uid,
     required String displayName,
-  }) async {
-  }
+  }) async {}
 }
 
 void main() {
@@ -505,9 +501,6 @@ void main() {
       ),
     );
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Action'));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Đăng xuất'), 120);
@@ -532,9 +525,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), 'vista');
 
-    await tester.tap(find.text('Action'));
+    await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    expect(find.text('GitHub Actions'), findsOneWidget);
+    expect(find.text('Tài khoản'), findsOneWidget);
     expect(tester.testTextInput.isVisible, isFalse);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();

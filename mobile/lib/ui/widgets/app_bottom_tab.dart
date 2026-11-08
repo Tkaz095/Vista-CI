@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AppTab { projects, action, profile }
+enum AppTab { projects, profile }
 
 /// Only reports the selected tab. The parent screen owns its content and state.
 class AppBottomTab extends StatelessWidget {
@@ -55,11 +55,6 @@ class AppBottomTab extends StatelessWidget {
               icon: Icon(Icons.folder_outlined),
               selectedIcon: Icon(Icons.folder),
               label: 'Projects',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.bolt_outlined),
-              selectedIcon: Icon(Icons.bolt),
-              label: 'Action',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),

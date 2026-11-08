@@ -19,8 +19,7 @@
 }
 .admin-shell input:disabled { background: #f1f5f9; }
 .admin-brand, .admin-login-brand { display: flex; align-items: center; gap: 12px; color: var(--ink); font-size: 20px; font-weight: 700; text-decoration: none; }
-.admin-brand-mark { display: inline-grid; place-items: center; width: 40px; height: 40px; background: var(--primary); color: #fff; border-radius: 12px; flex-shrink: 0; }
-.admin-brand-mark .admin-icon { width: 25px; height: 25px; }
+.admin-brand-mark { display: block; width: 40px; height: 40px; object-fit: contain; border-radius: 10px; flex-shrink: 0; }
 .admin-brand small, .admin-login-brand small { display: block; color: #64748b; font-size: 10px; letter-spacing: .12em; margin-top: 2px; }
 .admin-sidebar { display: flex; align-items: center; gap: 48px; min-height: 88px; padding: 0 max(24px, calc((100vw - 1200px) / 2)); background: #fff; border-bottom: 1px solid var(--line); }
 .admin-nav-caption { display: none; }
