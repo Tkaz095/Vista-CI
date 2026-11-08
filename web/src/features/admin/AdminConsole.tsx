@@ -18,6 +18,10 @@ import { MonitoringPanel } from './MonitoringPanel'
 type AdminTab = 'analytics' | 'monitoring' | 'config'
 type AccessState = 'checking' | 'signed_out' | 'verifying' | 'denied' | 'error' | 'ready'
 
+function AdminLogo() {
+  return <img className="admin-brand-mark" src={`${import.meta.env.BASE_URL}vista-ci-logo.png`} width={40} height={40} alt="" />
+}
+
 function message(error: unknown) {
   if (error instanceof AdminApiError) return error.message
   return error instanceof Error ? error.message : 'Thao tác chưa hoàn tất. Vui lòng thử lại.'
@@ -40,7 +44,7 @@ function AdminLogin({ onSubmit, error }: { onSubmit: (email: string, password: s
   }
 
   return <main className="admin-login-page">
-    <header className="admin-login-brand"><span className="admin-brand-mark"><AdminIcon name="activity" /></span><span>Vista CI <small>ADMIN</small></span></header>
+    <header className="admin-login-brand"><AdminLogo /><span>Vista CI <small>ADMIN</small></span></header>
     <section className="admin-login-card" aria-labelledby="admin-login-title">
       <span className="admin-eyebrow">KHU VỰC QUẢN TRỊ</span>
       <h1 id="admin-login-title">Đăng nhập admin</h1>
@@ -245,20 +249,20 @@ export function AdminConsole() {
   }
 
   if (access === 'checking' || access === 'verifying')
-    return <main className="admin-login-page"><section className="admin-login-card" role="status" aria-live="polite"><span className="admin-brand-mark"><AdminIcon name="activity" /></span><h1>Đang xác minh quyền</h1><p>Đang kiểm tra phiên đăng nhập và quyền admin với Firebase.</p></section></main>
+    return <main className="admin-login-page"><section className="admin-login-card" role="status" aria-live="polite"><AdminLogo /><h1>Đang xác minh quyền</h1><p>Đang kiểm tra phiên đăng nhập và quyền admin với Firebase.</p></section></main>
   if (access === 'signed_out' && user)
     return <AdminLogin onSubmit={loginAdmin} error={accessError || loginError} />
   if (access === 'signed_out' || !user)
     return <AdminLogin onSubmit={loginAdmin} error={loginError} />
   if (access === 'denied')
-    return <main className="admin-login-page"><section className="admin-login-card" aria-labelledby="denied-title"><span className="admin-brand-mark"><AdminIcon name="activity" /></span><h1 id="denied-title">Chưa được cấp quyền admin</h1><div className="admin-alert" role="alert">{accessError}</div><button className="admin-secondary admin-full-button" onClick={() => void signOut(auth)}>Đăng xuất / đổi tài khoản</button></section></main>
+    return <main className="admin-login-page"><section className="admin-login-card" aria-labelledby="denied-title"><AdminLogo /><h1 id="denied-title">Chưa được cấp quyền admin</h1><div className="admin-alert" role="alert">{accessError}</div><button className="admin-secondary admin-full-button" onClick={() => void signOut(auth)}>Đăng xuất / đổi tài khoản</button></section></main>
   if (access === 'error')
-    return <main className="admin-login-page"><section className="admin-login-card" aria-labelledby="admin-error-title"><span className="admin-brand-mark"><AdminIcon name="activity" /></span><h1 id="admin-error-title">Chưa xác minh được quyền</h1><div className="admin-alert" role="alert">{accessError}</div><button className="admin-secondary admin-full-button" onClick={() => window.location.reload()}>Thử lại</button><button className="admin-secondary admin-full-button" onClick={() => void signOut(auth)}>Đăng xuất</button></section></main>
+    return <main className="admin-login-page"><section className="admin-login-card" aria-labelledby="admin-error-title"><AdminLogo /><h1 id="admin-error-title">Chưa xác minh được quyền</h1><div className="admin-alert" role="alert">{accessError}</div><button className="admin-secondary admin-full-button" onClick={() => window.location.reload()}>Thử lại</button><button className="admin-secondary admin-full-button" onClick={() => void signOut(auth)}>Đăng xuất</button></section></main>
 
   const email = user.email || user.displayName || 'Quản trị viên'
   return <div className="admin-shell">
     <header className="admin-sidebar">
-      <a className="admin-brand" href="/"><span className="admin-brand-mark"><AdminIcon name="activity" /></span><span>Vista CI<small>ADMIN CONSOLE</small></span></a>
+      <a className="admin-brand" href="/"><AdminLogo /><span>Vista CI<small>ADMIN CONSOLE</small></span></a>
       <span className="admin-nav-caption">QUẢN LÝ</span>
       <nav className="admin-nav" aria-label="Điều hướng admin">
         <button className={activeTab === 'analytics' ? 'active' : ''} aria-current={activeTab === 'analytics' ? 'page' : undefined} onClick={() => setActiveTab('analytics')}><AdminIcon name="workspace" />Tổng quan</button>
