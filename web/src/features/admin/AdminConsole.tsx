@@ -14,8 +14,9 @@ import {
 import type { AdminOverview, RemoteConfigSnapshot } from './adminService'
 import './admin.css'
 import { MonitoringPanel } from './MonitoringPanel'
+import { NotificationsPanel } from './NotificationsPanel'
 
-type AdminTab = 'analytics' | 'monitoring' | 'config'
+type AdminTab = 'analytics' | 'monitoring' | 'config' | 'notifications'
 type AccessState = 'checking' | 'signed_out' | 'verifying' | 'denied' | 'error' | 'ready'
 
 function AdminLogo() {
@@ -268,17 +269,19 @@ export function AdminConsole() {
         <button className={activeTab === 'analytics' ? 'active' : ''} aria-current={activeTab === 'analytics' ? 'page' : undefined} onClick={() => setActiveTab('analytics')}><AdminIcon name="workspace" />Tổng quan</button>
         <button className={activeTab === 'monitoring' ? 'active' : ''} aria-current={activeTab === 'monitoring' ? 'page' : undefined} onClick={() => setActiveTab('monitoring')}><AdminIcon name="activity" />Giám sát ứng dụng</button>
         <button className={activeTab === 'config' ? 'active' : ''} aria-current={activeTab === 'config' ? 'page' : undefined} onClick={() => setActiveTab('config')}><AdminIcon name="settings" />Cấu hình ứng dụng</button>
+        <button className={activeTab === 'notifications' ? 'active' : ''} aria-current={activeTab === 'notifications' ? 'page' : undefined} onClick={() => setActiveTab('notifications')}><AdminIcon name="bell" />Thông báo</button>
       </nav>
       <div className="admin-sidebar-bottom"><span className="admin-secure-dot" /> Quản trị hệ thống</div>
     </header>
     <a className="admin-skip" href="#admin-content">Đến nội dung chính</a>
     <main className="admin-main">
-      <header className="admin-topbar"><div><span className="admin-topbar-kicker">VISTA CI</span><strong>{activeTab === 'analytics' ? 'Tổng quan hệ thống' : activeTab === 'monitoring' ? 'Giám sát ứng dụng' : 'Cấu hình ứng dụng'}</strong></div><div className="admin-account"><span className="admin-avatar">{email.slice(0, 1).toUpperCase()}</span><span>{email}<small>ADMIN</small></span><button onClick={() => void signOut(auth)}>Đăng xuất</button></div></header>
+      <header className="admin-topbar"><div><span className="admin-topbar-kicker">VISTA CI</span><strong>{activeTab === 'analytics' ? 'Tổng quan hệ thống' : activeTab === 'monitoring' ? 'Giám sát ứng dụng' : activeTab === 'notifications' ? 'Thông báo' : 'Cấu hình ứng dụng'}</strong></div><div className="admin-account"><span className="admin-avatar">{email.slice(0, 1).toUpperCase()}</span><span>{email}<small>ADMIN</small></span><button onClick={() => void signOut(auth)}>Đăng xuất</button></div></header>
       <div className="admin-content" id="admin-content" tabIndex={-1}>
         {activeTab === 'analytics' && (overview ? <AnalyticsPanel overview={overview} onRefresh={() => void refreshOverview()} refreshing={refreshing} /> : <div className="admin-panel admin-loading" role="status">Đang tải số liệu…</div>)}
         {activeTab === 'analytics' && refreshError && <div className="admin-alert" role="alert">{refreshError}</div>}
         {activeTab === 'monitoring' && <MonitoringPanel user={user} />}
         {activeTab === 'config' && <ConfigPanel user={user} snapshot={configSnapshot} onSaved={setConfigSnapshot} />}
+        <div hidden={activeTab !== 'notifications'}><NotificationsPanel key={user.uid} user={user} active={activeTab === 'notifications'} /></div>
       </div>
     </main>
   </div>

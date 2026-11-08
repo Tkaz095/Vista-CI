@@ -474,6 +474,11 @@ class AppTheme {
         selectionColor: AppColors.primaryContainer,
         selectionHandleColor: AppColors.primary,
       ),
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(_controlShape),
+        ),
+      ),
     );
   }
 
@@ -547,6 +552,8 @@ class AppTheme {
       borderRadius: BorderRadius.all(Radius.circular(14)),
       borderSide: BorderSide(color: AppColorsDark.outlineVariant, width: 1.0),
     );
+    const target = Size(AppSpacing.touchTarget, AppSpacing.touchTarget);
+    const padding = EdgeInsets.all(AppSpacing.control);
 
     return ThemeData(
       useMaterial3: true,
@@ -568,6 +575,79 @@ class AppTheme {
         scrolledUnderElevation: 0,
         titleTextStyle: text.titleMedium,
         toolbarHeight: 56,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style:
+            FilledButton.styleFrom(
+              minimumSize: target,
+              padding: padding,
+              shape: _controlShape,
+              textStyle: text.labelLarge,
+              disabledBackgroundColor: AppColorsDark.surfaceMuted,
+              disabledForegroundColor: AppColorsDark.textDisabled,
+            ).copyWith(
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return AppColorsDark.surfaceMuted;
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return AppColorsDark.primaryContainer;
+                }
+                return AppColorsDark.primary;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return AppColorsDark.textDisabled;
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return AppColorsDark.onPrimaryContainer;
+                }
+                return AppColorsDark.onPrimary;
+              }),
+            ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style:
+            OutlinedButton.styleFrom(
+              minimumSize: target,
+              padding: padding,
+              shape: _controlShape,
+              foregroundColor: AppColorsDark.secondary,
+              disabledForegroundColor: AppColorsDark.textDisabled,
+              textStyle: text.labelLarge,
+            ).copyWith(
+              side: WidgetStateProperty.resolveWith(
+                (states) => BorderSide(
+                  color: states.contains(WidgetState.disabled)
+                      ? AppColorsDark.outline
+                      : AppColorsDark.secondary,
+                ),
+              ),
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) =>
+                    states.contains(WidgetState.hovered) &&
+                        !states.contains(WidgetState.disabled)
+                    ? AppColorsDark.secondaryContainer
+                    : AppColorsDark.surface,
+              ),
+            ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: target,
+          padding: padding,
+          shape: _controlShape,
+          foregroundColor: AppColorsDark.primary,
+          disabledForegroundColor: AppColorsDark.textDisabled,
+          textStyle: text.labelLarge,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: target,
+          padding: padding,
+          foregroundColor: AppColorsDark.textMuted,
+        ),
       ),
       cardTheme: const CardThemeData(
         color: AppColorsDark.surface,
@@ -596,9 +676,51 @@ class AppTheme {
         side: BorderSide.none,
         padding: const EdgeInsets.all(AppSpacing.small),
       ),
+      checkboxTheme: const CheckboxThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColorsDark.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+        constraints: const BoxConstraints(maxWidth: 480),
+        titleTextStyle: text.headlineSmall,
+        contentTextStyle: text.bodyMedium,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColorsDark.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+      ),
       dividerTheme: const DividerThemeData(
         color: AppColorsDark.outlineVariant,
         thickness: 1,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColorsDark.primary,
+        linearTrackColor: AppColorsDark.primaryContainer,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColorsDark.surfaceMuted,
+        contentTextStyle: text.bodySmall?.copyWith(color: AppColorsDark.text),
+        behavior: SnackBarBehavior.floating,
+        shape: _controlShape,
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColorsDark.primary,
+        selectionColor: AppColorsDark.primaryContainer,
+        selectionHandleColor: AppColorsDark.primary,
+      ),
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(_controlShape),
+        ),
       ),
       inputDecorationTheme: InputDecorationThemeData(
         filled: true,
