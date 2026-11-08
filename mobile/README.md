@@ -320,13 +320,13 @@ Cảnh báo đọc/lưu phân tích là lỗi Firestore riêng với lỗi gọi
 
 Không in GitHub token, App Check token, prompt hoặc phản hồi AI đầy đủ vào log để chẩn đoán. Chưa xác minh dịch vụ thật chỉ từ các test tự động; khi gặp lỗi cần giữ đúng mã/thông báo của lần gọi thực tế.
 
-### FCM và Notification Center — chỉ phía mobile
+### FCM và Notification Center
 
-Phạm vi code nằm hoàn toàn trong mobile/: nhận FCM, quyền Android 13+, đăng ký FID theo UID, Notification Center/đã đọc, notification hệ thống cả foreground và nhấn mở đúng workflow run/attempt. Không có workflow gửi tự động, script Admin, service-account private key hoặc Python trong phần triển khai này. Không cần cài Python để build/chạy app hay nhận push.
+Phạm vi code nằm hoàn toàn trong mobile/: nhận FCM, quyền Android 13+, đăng ký FID theo UID, Notification Center/đã đọc, notification hệ thống cả foreground và nhấn mở đúng workflow run/attempt. Nguồn gửi tự động nằm trong `mobile/functions/`: Firebase Cloud Functions nhận GitHub `workflow_run`, lọc người nhận/tùy chọn, lưu lịch sử rồi gửi FCM. Xem [cấu hình, deploy và kiểm thử](functions/README.md). Không dùng backend web, không đưa service-account private key vào Flutter; không cần Python.
 
 Luồng MVVM: View → NotificationViewModel → MessagingSource / NotificationHistory / NotificationCache / SystemNotifications. Service bọc SDK Firebase và MethodChannel Android; View không gọi Firebase SDK. Phiên đăng nhập xác minh profile trước khi bind UID. Đổi tài khoản/mất quyền dọn state, route và khay thông báo. GitHub token chỉ ở RAM: sau cold start có thể phải kết nối lại rồi app tiếp tục đúng run/attempt.
 
-Trong Repository → Lịch sử chạy → Thông báo CI có failures (mặc định), results, all, off. Đây là tùy chọn lưu vào Firestore; **phía gửi tương lai phải đọc và áp dụng tùy chọn**, mobile không tự phát hiện mọi CI mới hoặc tự gửi FCM khi app đã đóng. Không thêm Remote Config key mới.
+Trong Repository → Lịch sử chạy → Thông báo CI có failures (mặc định), results, all, off. Tùy chọn được lưu vào Firestore và được Cloud Function áp dụng sau khi deploy và cấu hình webhook. Flutter không tự polling GitHub hoặc gửi FCM khi app đã đóng. Không thêm Remote Config key mới.
 
 #### Cấu hình và thử nhận push
 
@@ -353,7 +353,7 @@ Trong Repository → Lịch sử chạy → Thông báo CI có failures (mặc �
 
 Notification payload cần title/body để Android hiển thị ở nền. Tin thiếu UID bị bỏ qua; target sai không được dùng để mở URL tùy ý. Gửi completed với ID riêng có hậu tố _completed và phase completed để giữ hai mốc lịch sử. Foreground dùng tag ci_{repoId}_{runId}_{attempt}, ID 0; để thay cùng một thẻ khi background, phía gửi cũng phải đặt Android notification tag tương ứng. Chỉ đặt custom data trong Console không tự cấu hình Android tag.
 
-App lưu những tin callback nhận được theo UID: cache SharedPreferencesAsync và Firestore notifications. Có thể giữ tối đa 200 mục trong cache; Firestore tải 100 mục mới nhất. **Lịch sử đầy đủ cho tin bị gạt đi khi app đã đóng cần phía gửi ghi inbox trước khi push**; chỉ phía mobile không bảo đảm bắt được mọi tin hệ điều hành đã hiển thị. Không có nguồn gửi tự động hoặc private-repo allowlist trong code hiện tại.
+App lưu những tin callback nhận được theo UID: cache SharedPreferencesAsync và Firestore notifications. Có thể giữ tối đa 200 mục trong cache; Firestore tải 100 mục mới nhất. **Lịch sử đầy đủ cho tin bị gạt đi khi app đã đóng cần phía gửi ghi inbox trước khi push**; chỉ phía mobile không bảo đảm bắt được mọi tin hệ điều hành đã hiển thị. Cloud Function ghi inbox trước khi push và chỉ gửi tới các UID được quản trị viên cho phép trong `ciNotificationRepositories`, đồng thời kiểm tra repo còn nằm trong project của user. Luồng tự động chỉ hoạt động sau khi deploy/cấu hình theo `functions/README.md`.
 
 #### Rules cần Publish thủ công
 

@@ -5,12 +5,15 @@ import {
   ApiError,
   authenticateAdmin,
   database,
+  firebaseAuth,
   json,
   logAdminFailure,
+  messaging,
   remoteConfig,
 } from '../server/githubAuth.js'
 
 import { loadMonitoring } from '../server/adminMonitoring.js'
+import { listNotificationRecipients, parseNotificationDraft, readNotificationResult, sendAdminNotification } from '../server/adminNotifications.js'
 
 const configDefaults = {
   ci_analysis_enabled: 'true',
@@ -132,8 +135,22 @@ function parseParameters(value: unknown): Record<ConfigKey, string> {
 export default async function adminApi(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Cache-Control', 'no-store, private')
   try {
-    await authenticateAdmin(req)
-    const resource = new URL(req.url ?? '/', 'http://localhost').searchParams.get('resource')
+    const admin = await authenticateAdmin(req)
+    const parameters = new URL(req.url ?? '/', 'http://localhost').searchParams
+    const resource = parameters.get('resource')
+    if (resource === 'notification-recipients' && req.method === 'GET') {
+      json(res, 200, await listNotificationRecipients(database(), firebaseAuth(), parameters.get('cursor')))
+      return
+    }
+    if (resource === 'notifications' && req.method === 'GET') {
+      json(res, 200, await readNotificationResult(database(), admin.uid, parameters.get('id') ?? ''))
+      return
+    }
+    if (resource === 'notifications' && req.method === 'POST') {
+      const draft = parseNotificationDraft(await readBody(req))
+      json(res, 200, await sendAdminNotification(database(), firebaseAuth(), message => messaging().send(message), admin.uid, draft))
+      return
+    }
     if (resource === 'monitoring' && req.method === 'GET') {
       json(res, 200, await loadMonitoring())
       return
@@ -170,7 +187,7 @@ export default async function adminApi(req: IncomingMessage, res: ServerResponse
       json(res, 200, { values: configValues(published), version: published.etag })
       return
     }
-    res.setHeader('Allow', 'GET, PUT')
+    res.setHeader('Allow', 'GET, PUT, POST')
     throw new ApiError(404, 'ADMIN_RESOURCE_NOT_FOUND', 'Yêu cầu quản trị không hợp lệ.')
   } catch (error) {
     if (error instanceof ApiError) {
