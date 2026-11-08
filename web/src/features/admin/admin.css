@@ -152,3 +152,47 @@
 .admin-chart-reading { color: #475569; font-size: 12px; min-height: 20px; }
 @media (max-width: 1000px) { .admin-sidebar { gap: 24px; } .admin-nav { gap: 16px; } .admin-nav button { font-size: 13px; } }
 @media (max-width: 700px) { .admin-monitor-grid-layout { grid-template-columns: 1fr; } .admin-nav { flex-wrap: wrap; gap: 12px; } .admin-monitor-metrics { gap: 24px; } }
+
+.admin-notifications-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 32px; align-items: start; }
+.admin-notifications-grid > * { min-width: 0; }
+.admin-notification-form { display: grid; gap: 24px; margin-top: 24px; }
+.admin-notification-fields { display: grid; gap: 12px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.admin-notification-fields label { font-weight: 600; }
+.admin-notification-fields select, .admin-notification-fields textarea { width: 100%; min-width: 0; box-sizing: border-box; min-height: 48px; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--ink); font: inherit; }
+.admin-notification-fields textarea { resize: vertical; line-height: 1.6; min-height: 160px; }
+.admin-notification-fields :disabled { background: #f1f5f9; }
+.admin-notification-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.admin-notification-label small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.admin-notification-actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+.admin-notification-preview { position: sticky; top: 24px; padding: 8px 0; overflow-wrap: anywhere; }
+.admin-notification-preview h2 { margin: 0 0 12px; font-size: 18px; }
+.admin-notification-preview > p { color: var(--muted); }
+.admin-notification-uid { display: block; color: var(--muted); font-size: 12px; margin-bottom: 24px; overflow-wrap: anywhere; }
+.admin-notification-message { padding: 24px; margin: 24px 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.admin-notification-app { display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 600; }
+.admin-notification-message h3 { margin: 16px 0 8px; font-size: 16px; overflow-wrap: anywhere; }
+.admin-notification-message p { margin: 0; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-notification-result { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.admin-notification-result li { margin-bottom: 8px; }
+.admin-notification-confirm { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.admin-notification-confirm input { accent-color: var(--primary); width: 20px; height: 20px; margin: 0; flex-shrink: 0; }
+.admin-notification-errors { margin-top: 20px; overflow-wrap: anywhere; }
+.admin-notification-errors summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+.admin-notification-errors li { margin-bottom: 12px; }
+@media (max-width: 1000px) {
+  .admin-sidebar { flex-wrap: wrap; gap: 12px 24px; padding-block: 16px; }
+  .admin-nav { flex-wrap: wrap; gap: 8px 20px; }
+  .admin-nav button { min-height: 48px; }
+}
+@media (max-width: 800px) {
+  .admin-notifications-grid { grid-template-columns: 1fr; gap: 24px; }
+  .admin-notification-preview { position: static; }
+}
+@media (max-width: 600px) {
+  .admin-notification-heading { flex-direction: column; }
+  .admin-notification-heading > button { align-self: flex-start; }
+}
+@media (max-width: 400px) {
+  .admin-notification-actions { flex-direction: column; }
+  .admin-notification-actions button { white-space: normal; }
+}

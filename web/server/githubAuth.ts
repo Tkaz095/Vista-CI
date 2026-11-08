@@ -11,6 +11,7 @@ import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore'
 import { getRemoteConfig } from 'firebase-admin/remote-config'
+import { getMessaging } from 'firebase-admin/messaging'
 
 export class ApiError extends Error {
   readonly status: number
@@ -87,6 +88,8 @@ function admin() {
 }
 export const database = () => getFirestore(admin())
 export const remoteConfig = () => getRemoteConfig(admin())
+export const firebaseAuth = () => getAuth(admin())
+export const messaging = () => getMessaging(admin())
 // Server-only OAuth credential; never returned to the browser.
 export async function googleCloudAccessToken() {
   const credential = admin().options.credential

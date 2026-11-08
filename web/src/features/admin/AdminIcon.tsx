@@ -5,6 +5,7 @@ const paths = {
   workspace: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
   refresh: 'M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M5 15a8 8 0 0 0 13 3',
   settings: 'M4 7h16M4 17h16M8 4v6M16 14v6',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
 }
 
 export function AdminIcon({ name }: { name: keyof typeof paths }) {

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:notifications": "tsc server/adminNotifications.test.ts tests/notificationDelivery.test.ts --outDir dist-ssr/admin-notification-tests --rootDir . --module NodeNext --moduleResolution NodeNext --target ES2023 --skipLibCheck --strict && node --test --test-concurrency=1 dist-ssr/admin-notification-tests/server/adminNotifications.test.js dist-ssr/admin-notification-tests/tests/notificationDelivery.test.js"
   },
   "dependencies": {
     "firebase": "^13.1.0",
