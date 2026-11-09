@@ -2,7 +2,7 @@
 
 Tài liệu và trạng thái triển khai: [docs/README.md](docs/README.md). Phạm vi mới nhất: [workspace cá nhân và repository](docs/project/16-workspace-ca-nhan-repositories.md).
 
-Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hiện tại có đăng nhập GitHub, hồ sơ user, CRUD workspace/repository và màn CI/CD đọc lịch sử GitHub Actions; agent để giai đoạn sau.
+Vista CI gồm ứng dụng Flutter cho user và web React/Vite cho admin. Ứng dụng hỗ trợ đăng nhập GitHub, quản lý project/repository, xem GitHub Actions và phân tích log lỗi bằng Gemini. Web admin cung cấp cấu hình Remote Config, giám sát ứng dụng và gửi thông báo.
 
 ## Project structure
 
@@ -11,6 +11,16 @@ Vista CI gồm mobile Flutter và web React/Vite dùng chung Firebase. Mốc hi�
 - `.github/workflows/` — GitHub Actions workflows
 
 Both clients connect to Firebase project `vista-ci`. GitHub sign-in, account linking and automatic user-profile creation are implemented. Personal workspace CRUD uses ownerUid. GitHub repository discovery uses the OAuth token in session memory; users can select repositories and manage workspace links. See [implementation and Firebase setup](docs/project/17-workspace-crud-github.md).
+
+## Code review
+
+Tạo pull request từ nhánh tính năng về `dev`. Cấu hình CodeRabbit được lưu tại [`.coderabbit.yaml`](.coderabbit.yaml), cho phép review PR về `dev` và phản hồi bằng tiếng Việt.
+
+Nếu CodeRabbit bỏ qua auto-review do giới hạn dịch vụ, thêm comment sau vào PR để yêu cầu review thủ công:
+
+```text
+@coderabbitai full review
+```
 
 Publish [Firestore Rules](firebase/firestore.rules) manually using the Firebase Console. Local code changes do not update the deployed Rules. See [user-only access and troubleshooting](docs/project/15-user-only.md). End-to-end GitHub/profile/workspace access and the new ownerUid Rules still need user confirmation after publishing.
 
