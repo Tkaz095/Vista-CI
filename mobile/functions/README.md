@@ -106,7 +106,8 @@ event/action không dùng được xác minh rồi trả 200 với `ignored`.
 Push code, mở PR hoặc rerun một workflow thật. Trong **Recent Deliveries**,
 kiểm tra `workflow_run` và response `notificationsCreated`, `pushesSent`,
 `pushesFailed`. Mở điện thoại để kiểm tra thông báo và đường dẫn đến run/attempt.
-Nếu app đã đóng và mất GitHub token trong RAM, kết nối lại GitHub khi app yêu cầu.
+Sau cold start, app khôi phục GitHub token từ secure storage. Nếu token không còn
+hợp lệ/không đọc được, kết nối lại GitHub khi app yêu cầu.
 
 ## 5. Gửi trùng và lỗi gửi
 

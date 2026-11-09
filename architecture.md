@@ -50,7 +50,9 @@ Timeout mặc định 20 giây. Retry hủy listener cũ và đăng ký lại. G
 
 Mọi route project/form/run/analysis/comment và dialog xác nhận nằm dưới Navigator của phiên. Khi logout, UID thay đổi hoặc profile mất quyền, cả subtree bị gỡ và các ViewModel bị dispose; Back không mở lại màn cũ. Nút Back chuyển tab về Projects trước, sau đó mới xử lý navigation. Firestore Rules vẫn là lớp thực thi quyền dữ liệu.
 
-Firebase giữ phiên native. GitHub access token vẫn chỉ giữ trong RAM, có UID chủ sở hữu và bị xóa khi đổi UID/logout. Cold start khôi phục phiên Vista nhưng không khôi phục GitHub token. Profile có nút **Kết nối lại GitHub**; reauthenticate cùng Firebase user, không lưu token xuống disk và không tự chuyển sang UID khác. Hoàn tất OAuth dựng lại scope dữ liệu để các ViewModel nhận token mới.
+Firebase giữ phiên native. Từ 10/11/2026, GitHub access token được lưu mã hóa bằng `flutter_secure_storage`, ràng buộc Firebase UID và GitHub provider ID. `FirebaseAuthService.authStateChanges()` chờ khôi phục kết nối trước khi phát identity để ViewModel dựng dữ liệu đúng token. Khi khởi động lại, service gọi GitHub `/user` (timeout 5 giây): HTTP 401 hoặc GitHub ID không khớp sẽ xóa token; lỗi mạng/rate-limit tạm thời giữ credential để các yêu cầu GitHub thông thường xử lý lỗi/quyền. Không gửi token qua redirect. Token không nằm trong SharedPreferences dạng plaintext, Firestore, telemetry hoặc backup/transfer preferences Android.
+
+Đọc/ghi/xóa secure storage được tuần tự hóa; kiểm tra UID và revision trước/sau thao tác để bỏ kết quả phiên cũ. Đăng xuất xóa credential bảo mật trước khi kết thúc phiên Firebase; lỗi xóa không được coi là logout thành công. Đổi tài khoản không dùng lại credential của UID/GitHub ID khác. Profile vẫn có **Kết nối lại GitHub** cho token bị thu hồi/hết hiệu lực hoặc lỗi secure storage; reauthenticate cùng Firebase user. Đây là lưu và khôi phục access token, không phải cơ chế tự cấp mới/refresh token.
 
 ## State dữ liệu
 
