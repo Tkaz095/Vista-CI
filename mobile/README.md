@@ -2,7 +2,7 @@
 
 > Analytics/Crashlytics/Remote Config: xem [hướng dẫn cấu hình và demo](../docs/firebase-observability-setup.md) và [analytics plan](../docs/analytics-plan.md). Sau khi cập nhật code phải rebuild APK để thêm native plugins.
 
-> Cập nhật phiên/MVVM 04/11/2026: xem [architecture.md](../architecture.md). App dùng Provider, theo dõi Firebase Auth để khôi phục phiên và bảo vệ toàn bộ stack màn hình. Khi mở lại app, vào Profile → Kết nối lại GitHub để lấy GitHub token trong RAM; không cần đăng xuất phiên Vista. GitHub vẫn là phương thức đăng nhập hiện hành.
+> Cập nhật phiên/token 10/11/2026: xem [architecture.md](../architecture.md) và [lưu kết nối GitHub bảo mật](../docs/github-token-persistence.md). App khôi phục token mã hóa theo đúng Firebase UID/GitHub ID khi mở lại. Chỉ cần Profile → Kết nối lại GitHub khi token không còn hợp lệ hoặc không đọc được bộ nhớ bảo mật. Cần rebuild APK để thêm native plugin; đăng nhập/kết nối lại một lần sau khi nâng cấp từ bản chỉ giữ token trong RAM.
 
 # Vista CI Mobile
 
@@ -90,7 +90,7 @@ AuthView → AuthViewModel → AuthRepository
 2. `lib/ui/auth/auth_view.dart`: hiển thị Login khi chưa có profile, Home khi đã có profile.
 3. `lib/ui/auth/auth_view_model.dart`: quản lý `profile`, `busy` và thông báo lỗi bằng `ChangeNotifier`.
 4. `lib/data/repositories/auth_repository.dart`: chạy đăng nhập GitHub, tạo dữ liệu hồ sơ ban đầu, lấy hoặc tạo hồ sơ và trả `UserProfile`.
-5. `lib/data/services/firebase_auth_service.dart`: gọi SDK đăng nhập GitHub, giữ GitHub access token trong bộ nhớ và xóa token khi logout thành công.
+5. `lib/data/services/firebase_auth_service.dart`: gọi SDK đăng nhập GitHub, lưu/khôi phục access token mã hóa qua `GitHubTokenStore`, kiểm tra đúng chủ sở hữu và xóa credential trước khi logout Firebase.
 6. `lib/data/services/firestore_profile_service.dart`: dùng transaction để trả hồ sơ đã có hoặc tạo `users/{uid}`. Hồ sơ hiện có được giữ nguyên.
 7. `lib/data/models/`: identity, profile và dữ liệu tạo profile; role được lưu dưới dạng chuỗi.
 8. `lib/ui/home/home_view.dart`: tạo và hủy ProjectsViewModel theo phiên Home, hiển thị user và nút logout.
@@ -161,7 +161,7 @@ File `../firebase/firestore.rules` đã bổ sung quyền tại `users/{uid}/pro
 
 ### Quyền GitHub
 
-Luồng auth vẫn xin scope OAuth `repo`, lấy token từ `result.credential?.accessToken` và chỉ giữ token trong bộ nhớ. Scope này gồm quyền đọc và ghi; tính năng hiện chỉ đọc danh sách repo và GitHub Actions. GitHubService tải đủ các trang repo với `visibility=all`, `affiliation=owner,collaborator,organization_member`. Dữ liệu thực tế còn phụ thuộc scope đã cấp và chính sách organization/SSO.
+Luồng auth vẫn xin scope OAuth `repo`, lấy token từ `result.credential?.accessToken` và lưu mã hóa theo đúng Firebase UID/GitHub ID; không lưu plaintext hoặc Firestore. Scope này gồm quyền đọc và ghi; quyền thực tế của từng thao tác vẫn do GitHub quyết định. GitHubService tải đủ các trang repo với `visibility=all`, `affiliation=owner,collaborator,organization_member`. Dữ liệu thực tế còn phụ thuộc scope đã cấp và chính sách organization/SSO.
 
 Test tự động kiểm tra model, input không hợp lệ, CRUD/ViewModel/UI, lỗi GitHub/Firestore, thao tác trùng, hủy ViewModel và màn hình nhỏ. Luồng OAuth và SDK Firestore trên Android vẫn cần thử với project Firebase hiện tại sau khi publish Rules.
 
@@ -324,7 +324,7 @@ Không in GitHub token, App Check token, prompt hoặc phản hồi AI đầy đ
 
 Phạm vi code nằm hoàn toàn trong mobile/: nhận FCM, quyền Android 13+, đăng ký FID theo UID, Notification Center/đã đọc, notification hệ thống cả foreground và nhấn mở đúng workflow run/attempt. Nguồn gửi tự động nằm trong `mobile/functions/`: Firebase Cloud Functions nhận GitHub `workflow_run`, lọc người nhận/tùy chọn, lưu lịch sử rồi gửi FCM. Xem [cấu hình, deploy và kiểm thử](functions/README.md). Không dùng backend web, không đưa service-account private key vào Flutter; không cần Python.
 
-Luồng MVVM: View → NotificationViewModel → MessagingSource / NotificationHistory / NotificationCache / SystemNotifications. Service bọc SDK Firebase và MethodChannel Android; View không gọi Firebase SDK. Phiên đăng nhập xác minh profile trước khi bind UID. Đổi tài khoản/mất quyền dọn state, route và khay thông báo. GitHub token chỉ ở RAM: sau cold start có thể phải kết nối lại rồi app tiếp tục đúng run/attempt.
+Luồng MVVM: View → NotificationViewModel → MessagingSource / NotificationHistory / NotificationCache / SystemNotifications. Service bọc SDK Firebase và MethodChannel Android; View không gọi Firebase SDK. Phiên đăng nhập xác minh profile trước khi bind UID. Đổi tài khoản/mất quyền dọn state, route và khay thông báo. GitHub token được khôi phục từ secure storage khi cold start; nếu không còn hợp lệ, kết nối lại rồi app tiếp tục đúng run/attempt.
 
 Trong Repository → Lịch sử chạy → Thông báo CI có failures (mặc định), results, all, off. Tùy chọn được lưu vào Firestore và được Cloud Function áp dụng sau khi deploy và cấu hình webhook. Flutter không tự polling GitHub hoặc gửi FCM khi app đã đóng. Không thêm Remote Config key mới.
 

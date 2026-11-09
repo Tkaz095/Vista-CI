@@ -9,6 +9,7 @@ String authErrorMessage(Object error) {
   }
 
   return switch (error.code) {
+    'secure-storage-unavailable' => 'Chưa truy cập được bộ nhớ bảo mật. Hãy thử lại thao tác; nếu đang kết nối GitHub, phiên hiện tại vẫn có thể sử dụng.',
     'user-mismatch' => 'Hãy chọn tài khoản GitHub đang liên kết với phiên Vista này. Để đổi tài khoản, hãy đăng xuất trước.',
     'network-request-failed' || 'web-network-request-failed' =>
       'Không kết nối được dịch vụ đăng nhập. Kiểm tra mạng rồi thử lại.',
