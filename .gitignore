@@ -8,10 +8,15 @@ mobile/coverage/
 mobile/.pub-cache/
 
 # Node / Vite
+/node_modules/
+# Scratch npm install at repository root (there is no root package.json).
+/package-lock.json
 web/node_modules/
 web/dist/
 web/.env*
 !web/.env.example
+# Local Vite env files accidentally created under source must never be committed.
+web/src/.env
 
 # Firebase Admin SDK credentials
 **/*service-account*.json
@@ -20,6 +25,9 @@ web/.env*
 .firebase/
 firebase-debug.log
 firestore-debug.log
+
+# Generated document exports and inspection artifacts
+/outputs/
 
 # Editors and operating systems
 .idea/

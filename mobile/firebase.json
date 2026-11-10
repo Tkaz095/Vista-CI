@@ -1,0 +1,53 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "vista-ci",
+          "appId": "1:1087429884658:android:cdfbf3a5d8a08c0d1a6e6b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "vista-ci",
+          "configurations": {
+            "android": "1:1087429884658:android:cdfbf3a5d8a08c0d1a6e6b"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "ci-notifications",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*-debug.log",
+        ".env*",
+        ".secret.local",
+        "test",
+        "lib/test"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "emulators": {
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8099
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
+  }
+}

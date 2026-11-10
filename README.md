@@ -1,6 +1,8 @@
 # Vista CI
 
-Vista CI is a mobile app and web dashboard for viewing CI/CD pipeline status, build history, and deployment notifications.
+Tài liệu và trạng thái triển khai: [docs/README.md](docs/README.md). Phạm vi mới nhất: [workspace cá nhân và repository](docs/project/16-workspace-ca-nhan-repositories.md).
+
+Vista CI gồm ứng dụng Flutter cho user và web React/Vite cho admin. Ứng dụng hỗ trợ đăng nhập GitHub, quản lý project/repository, xem GitHub Actions và phân tích log lỗi bằng Gemini. Web admin cung cấp cấu hình Remote Config, giám sát ứng dụng và gửi thông báo.
 
 ## Project structure
 
@@ -8,18 +10,30 @@ Vista CI is a mobile app and web dashboard for viewing CI/CD pipeline status, bu
 - `web/` — React + TypeScript dashboard powered by Vite
 - `.github/workflows/` — GitHub Actions workflows
 
-Both clients will connect to the same Firebase project. Firebase Core is configured for Android with project `vista-ci`; the web client is not connected yet.
+Both clients connect to Firebase project `vista-ci`. GitHub sign-in, account linking and automatic user-profile creation are implemented. Personal workspace CRUD uses ownerUid. GitHub repository discovery uses the OAuth token in session memory; users can select repositories and manage workspace links. See [implementation and Firebase setup](docs/project/17-workspace-crud-github.md).
+
+## Code review
+
+Tạo pull request từ nhánh tính năng về `dev`. Cấu hình CodeRabbit được lưu tại [`.coderabbit.yaml`](.coderabbit.yaml), cho phép review PR về `dev` và phản hồi bằng tiếng Việt.
+
+Nếu CodeRabbit bỏ qua auto-review do giới hạn dịch vụ, thêm comment sau vào PR để yêu cầu review thủ công:
+
+```text
+@coderabbitai full review
+```
+
+Publish [Firestore Rules](firebase/firestore.rules) manually using the Firebase Console. Local code changes do not update the deployed Rules. See [user-only access and troubleshooting](docs/project/15-user-only.md). End-to-end GitHub/profile/workspace access and the new ownerUid Rules still need user confirmation after publishing.
 
 ## Android cloud build
 
 The **Android APK** GitHub Actions workflow analyzes the Flutter code and builds a development APK on GitHub. Download the APK from the successful run and drag it into Genymotion. The default target is `android-x64`; manual runs also support ARM64 or a universal APK.
 
-See [the setup and installation guide](docs/android-cloud-build.md). Building on GitHub avoids downloading another NDK on the local machine. Workflow execution still needs to be confirmed by a successful run after the changes are pushed.
+See [the setup and installation guide](docs/android-cloud-build.md). Building on GitHub avoids downloading another NDK on the local machine. The first cloud build passed in [run 41219589321](https://github.com/Tkaz095/Vista-CI/actions/runs/41219589321). APK installation, Firebase runtime behavior, and business features still need separate validation.
 
 ## Requirements
 
 - Flutter stable SDK
-- Node.js 20.19+ or 22.12+
+- Node.js 24 recommended (Vite supports 20.19+ or 22.12+)
 - npm
 
 ## Run locally
@@ -39,3 +53,7 @@ cd web
 npm install
 npm run dev
 ```
+
+Màn CI/CD riêng, bộ lọc và quyền GitHub: [Bước 18](docs/project/18-cicd-screen.md). Không cần chỉnh Firebase cho bước đọc CI/CD.
+
+Luồng web và Flutter dùng backend GitHub chung, quản lý connection và job/step/log: [Bước22](docs/project/22-complete-workspace-cicd-mobile.md). Cần cấu hình callback/env/IAM theo bước21 trước khi dùng API thật; APK biên dịch thành công không thay cho kiểm tra OAuth/điện thoại.

@@ -1,0 +1,78 @@
+**Báo cáo CI (05/11/2026):** [PDF local + Cloudinary unsigned upload, cấu hình qua Remote Config](ci-report-cloudinary.md). Dùng Cloudinary thay Firebase Storage theo quyết định người dùng.
+
+**Analytics/Crashlytics/Remote Config (05/11/2026):** [analytics plan](analytics-plan.md), [cấu hình và bằng chứng cần thu](firebase-observability-setup.md). Code đã tích hợp; trạng thái Console/thiết bị cần được xác minh riêng.
+
+**Kiến trúc/phiên Flutter mới nhất (04/11/2026): [architecture.md](../architecture.md).** Provider, state Loading/Success/Empty/Error, khôi phục phiên GitHub/Firebase, profile gate và navigation theo phiên. Các mô tả auth/state trong mốc cũ bên dưới là lịch sử.
+
+# Vista CI - Bộ tài liệu dự án
+
+**Phiên bản hiện hành:** 0.4 | **Ngày:** 01/11/2026 | **Trạng thái:** Đang triển khai theo phạm vi workspace nhiều repo và agent đọc log.
+
+**Đọc trước: [09. Phạm vi hiện hành — Workspace, CI/CD và agent đọc log](project/09-pham-vi-workspace-agents.md).** Vista theo luồng workspace nhiều repo → theo dõi trạng thái/kết quả/log → agent phân tích có dẫn chứng → người dùng chạy lại hoặc tạo issue/comment PR → audit. Agent chưa chốt API, ưu tiên miễn phí. Email/Password và Admin/Member được giữ; quyền chi tiết và backend/chi phí còn cần chốt. FCM làm sau MVP.
+
+Các tài liệu 01–08 và bộ Google Docs/Sheet v0.3 là snapshot trước thay đổi phạm vi. Khi có mâu thuẫn, dùng tài liệu 09 và yêu cầu mới nhất; không áp dụng lại giả định một repo hoặc completed-only cho thiết kế mới.
+
+Bộ tài liệu này kế thừa có chọn lọc 4 gói SAGA đã cung cấp. SAGA là hệ thống đánh giá hoạt động sinh viên, không phải sản phẩm quản lý CI/CD. Đặc biệt, “Task-Commit Pipeline” trong slide SAGA là luồng truy xuất task/commit; các yêu cầu GitHub Actions của Vista là thiết kế mới.
+
+## Đọc theo thứ tự
+
+**Mới nhất: [24. Tự gia hạn và lỗi quyền tải log](project/24-refresh-and-log-permission-diagnosis.md).** Đọc trực tiếp xác nhận runs/jobs hoạt động, log bị403 quyền; sửa cooldown sai, single-flight refresh và phân loại OAuth error. Chưa xác minh rotation khi token hết hạn thật.
+
+**Mới nhất: [23. Tự cập nhật CI/CD và cấu hình backend](project/23-auto-update-and-backend-setup.md).** Web tự cập nhật run/job/step; hướng dẫn sửa lỗi thiếu FIREBASE_PROJECT_ID và các biến server. Không cần logout/login để sửa lỗi setup.
+
+**Mới nhất: [22. Mục2–5 trên web và Flutter](project/22-complete-workspace-cicd-mobile.md).** Quản lý connection, workspace→repo→CI/job/log, Flutter dùng backend chung và hướng dẫn điện thoại thật. Cấu hình bên ngoài/kiểm tra runtime còn cần thực hiện; không coi build là nghiệm thu.
+
+**Mục1 mới nhất: [21. GitHub auto-refresh cho web](project/21-github-auto-refresh.md).** Code backend OAuth/vault/refresh đã có, còn cần người dùng cấu hình callback/env/IAM và xác minh runtime. Thay thế sessionStorage token của web ở mốc20; Flutter chưa đổi.
+
+**Bước mới nhất: [20. Workspace → CI/CD → job/log và phiên GitHub](project/20-workspace-navigation-session-logs.md).** Web có thêm repo trong workspace, mở trực tiếp CI của repo, job/step/log gốc và giữ credential qua F5 cùng tab. Mốc20 thay thế mô tả token memory-only và log external-only của web trong mốc17–19; mobile chưa thay đổi.
+
+**UI web mới nhất: [19. Web UI refinement](project/19-web-ui-refinement.md).** Dashboard CI/CD rõ outcome, summary dữ liệu đã tải và header/form thống nhất. Design mục15 ghi hướng áp dụng skill web-design.
+
+**Bước mới nhất: [18. Màn hình CI/CD riêng](project/18-cicd-screen.md).** Web/mobile có Workspace | CI/CD | Tài khoản, đọc lịch sử Actions trực tiếp GitHub, chọn repo và lọc/phân trang. Không cần thay đổi Firebase ở bước này. Các mô tả chưa có CI/CD dưới đây là mốc lịch sử.
+
+**Bước triển khai mới nhất: [17. CRUD workspace và GitHub repo](project/17-workspace-crud-github.md).** Code mobile/web dùng ownerUid; cần người dùng publish Rules mới, cấp quyền GitHub trong app và xác nhận luồng thực tế. Tài liệu 16 là phạm vi, 17 là hiện trạng triển khai.
+
+**Phạm vi mới nhất theo người dùng: [16. Workspace cá nhân và repository](project/16-workspace-ca-nhan-repositories.md).** Tài khoản tự tạo workspace, xem repo GitHub trong Tài khoản, chọn và CRUD liên kết repo trong workspace. Chưa triển khai CI/CD/agent/Admin/chia sẻ ở mốc này. Model ownerUid đang là phương án triển khai, chưa thay đổi runtime.
+
+**Quyết định mới nhất: [15. Một vai trò user và lỗi đọc hồ sơ](project/15-user-only.md).** Role mặc định/duy nhất hiện tại là `user`; Admin để giai đoạn sau. Dùng file `firebase/firestore.rules` mới nhất khi publish.
+
+Cập nhật mới nhất: [14. Tự tạo hồ sơ khi đăng nhập lần đầu](project/14-tu-tao-ho-so.md). Người dùng không cần nhập UID hoặc tạo hồ sơ thủ công. Cần publish Rules self-create mới.
+
+Bước tiếp theo sau khi Save GitHub provider: [13. Đăng nhập GitHub và liên kết tài khoản](project/13-github-sign-in.md). Cần liên kết từ tài khoản hiện có để giữ UID trước khi thử đăng nhập GitHub độc lập.
+
+Bước workspace: [12. Mobile Auth và workspace dùng chung Web](project/12-mobile-auth-workspaces.md). Web Auth đã được người dùng xác nhận; mobile đã nối Auth/profile, hai client đã có code chọn workspace và đọc repository. Người dùng cần publish Rules và tạo dữ liệu theo hướng dẫn bước 12. Chưa nối GitHub/AI.
+
+[Flutter handover](FLUTTER_HANDOVER.md) ghi ánh xạ màn hình, MVVM và giới hạn triển khai.
+
+Đã có [DESIGN.md chính thức phiên bản 1.0](../DESIGN.md), tổng hợp từ bản agent và đối chiếu repo/overview. [Báo cáo sàng lọc](project/10-sang-loc-design.md) ghi thống kê, phần giữ/thu gọn và mâu thuẫn đã sửa. Codex đã viết handover ở link trên; [hướng dẫn nội bộ](prompts/02-flutter-handover-after-design.md) là checklist tham chiếu. Mobile dùng bottom tab, web dùng header và bộ lọc mở qua một nút nhỏ.
+
+| Tài liệu | Câu hỏi được giải đáp |
+| --- | --- |
+| [01. Tổng quan và phạm vi](project/01-tong-quan-va-pham-vi.md) | Vista giải quyết việc gì? MVP gồm những gì? |
+| [02. Yêu cầu và luồng sử dụng](project/02-yeu-cau-va-luong-su-dung.md) | Ai làm gì trên mobile/web? Thế nào là đạt? |
+| [03. Kiến trúc và MVVM](project/03-kien-truc-va-mvvm.md) | UI, Firebase và GitHub phối hợp ra sao? |
+| [04. Dữ liệu và phân quyền](project/04-du-lieu-va-phan-quyen.md) | Lưu gì, ai đọc/ghi, trạng thái nào hợp lệ? |
+| [05. CI/CD và môi trường](project/05-ci-cd-va-moi-truong.md) | Viết code, build APK, chạy Genymotion, deploy web thế nào? |
+| [06. Kiểm thử và demo](project/06-kiem-thu-va-demo.md) | Chứng minh đăng nhập, dữ liệu, quyền và pipeline bằng cách nào? |
+| [07. Lộ trình và phiếu đánh giá](project/07-lo-trinh-va-danh-gia.md) | Cần chốt điều gì trước khi code tiếp? |
+| [08. Hiện trạng và đối chiếu 4 nguồn](project/08-hien-trang-va-doi-chieu-nguon.md) | Phần nào đã có, nguồn nào chứng minh, phần nào mới đề xuất? |
+
+Hướng dẫn thao tác đã có: [Build Android trên GitHub và chạy Genymotion](android-cloud-build.md).
+
+## Quyết định lịch sử v0.3 — đã được tài liệu 09 cập nhật
+
+1. **Đã xác nhận:** MVP bao gồm bấm chạy/chạy lại workflow ngay trong Vista. Còn cần chốt ai được bấm, hỗ trợ trên client nào và backend tin cậy sẽ dùng.
+2. **Đã xác nhận:** một repository `Tkaz095/Vista-CI`, hai vai trò Admin/Member và đăng nhập Email/Password.
+3. **Đã xác nhận:** FCM làm ở giai đoạn sau, khi đăng nhập, chạy/chạy lại và xem kết quả thật đã ổn định. FCM không chặn nghiệm thu MVP ban đầu; xem giải thích ở tài liệu 07.
+
+Điền nhận xét tại [phiếu đánh giá](project/07-lo-trinh-va-danh-gia.md). Các tài liệu 01–08 là mốc soạn tài liệu ban đầu; trạng thái triển khai mới nhất xem bước 12. Các thao tác Firebase/GitHub do người dùng thực hiện.
+
+## Quy ước trạng thái
+
+- **Đã kiểm chứng:** có bằng chứng chạy hoặc kiểm tra tương ứng; nêu rõ phạm vi bằng chứng.
+- **Đã có cấu hình/code:** nhìn thấy trong repo, chưa đồng nghĩa chạy đúng trên thiết bị.
+- **Đã chốt yêu cầu:** người dùng đã duyệt phạm vi; chưa đồng nghĩa tính năng đã triển khai.
+- **Đề xuất:** thiết kế để bạn duyệt, chưa được triển khai.
+- **Cần quyết định:** không được tự xem là đã đồng ý.
+
+Chi tiết hiện trạng nằm ở tài liệu 08. Việc build thành công không chứng minh đăng nhập, dữ liệu, FCM hoặc toàn bộ nghiệp vụ hoạt động.

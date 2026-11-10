@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function activeUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'user';
+    }
+    function owns(workspaceId) {
+      return activeUser()
+        && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == request.auth.uid;
+    }
+    function editable(workspaceId) {
+      return owns(workspaceId)
+        && get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.status == 'active';
+    }
+    function ownsActiveAfter(workspaceId) {
+      return activeUser()
+        && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/workspaces/$(workspaceId)).data.status == 'active';
+    }
+    function text(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+    // Encrypted GitHub credentials: only the backend Admin SDK may access this vault.
+    match /githubOAuthRequests/{id} {
+      allow read, write: if false;
+    }
+    match /githubConnections/{uid} {
+      allow read, write: if false;
+    }
+    match /users/{userId} {
+      // A signed-in user can get their own document even before it exists.
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['displayName', 'role', 'isActive'])
+        && request.resource.data.keys().hasOnly(['displayName', 'role', 'isActive'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.role == 'user'
+        && request.resource.data.isActive == true;
+      // Legacy profiles may only downgrade/normalize their own role to user.
+      // Activation and every other field remain unchanged.
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && resource.data.isActive == true
+        && request.resource.data.role == 'user'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+      allow delete: if false;
+      match /projects/{projectId} {
+        function isOwner() {
+          return activeUser() && request.auth.uid == userId;
+        }
+        function validProject() {
+          return request.resource.data.keys().hasAll(['name', 'description', 'repositories', 'createdAt', 'updatedAt'])
+            && request.resource.data.keys().hasOnly(['name', 'description', 'repositories', 'createdAt', 'updatedAt'])
+            && text(request.resource.data.name, 1, 100)
+            && text(request.resource.data.description, 0, 1000)
+            && request.resource.data.repositories is list
+            && request.resource.data.repositories.size() <= 50;
+        }
+        allow read, delete: if isOwner();
+        allow create: if isOwner() && validProject()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+        allow update: if isOwner() && validProject()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'repositories', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+    match /workspaces/{workspaceId} {
+      allow read: if activeUser() && resource.data.ownerUid == request.auth.uid;
+      allow create: if activeUser()
+        && request.resource.data.keys().hasAll(['ownerUid', 'name', 'description', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['ownerUid', 'name', 'description', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && text(request.resource.data.name, 1, 100)
+        && text(request.resource.data.description, 0, 1000)
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if owns(workspaceId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'status', 'updatedAt'])
+        && text(request.resource.data.name, 1, 100)
+        && text(request.resource.data.description, 0, 1000)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.status in ['active', 'deleting']
+        && (resource.data.status == 'active' || request.resource.data.status == 'deleting');
+      allow delete: if owns(workspaceId) && resource.data.status == 'deleting';
+      match /repositories/{repoId} {
+        allow read: if owns(workspaceId);
+        allow create: if ownsActiveAfter(workspaceId)
+          && repoId.matches('^[1-9][0-9]*$')
+          && request.resource.data.keys().hasAll(['githubRepositoryId', 'fullName', 'htmlUrl', 'defaultBranch', 'private', 'displayName', 'note', 'addedAt', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['githubRepositoryId', 'fullName', 'htmlUrl', 'defaultBranch', 'private', 'displayName', 'note', 'addedAt', 'updatedAt'])
+          && request.resource.data.githubRepositoryId == repoId
+          && text(request.resource.data.fullName, 3, 201)
+          && request.resource.data.fullName.matches('^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
+          && request.resource.data.htmlUrl == 'https://github.com/' + request.resource.data.fullName
+          && text(request.resource.data.defaultBranch, 0, 255)
+          && request.resource.data.private is bool
+          && text(request.resource.data.displayName, 1, 100)
+          && text(request.resource.data.note, 0, 1000)
+          && request.resource.data.addedAt == request.time
+          && request.resource.data.updatedAt == request.time;
+        allow update: if editable(workspaceId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'note', 'updatedAt'])
+          && text(request.resource.data.displayName, 1, 100)
+          && text(request.resource.data.note, 0, 1000)
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if owns(workspaceId);
+      }
+    }
+  }
+}
