@@ -46,7 +46,7 @@ export class AdminApiError extends Error {
 
 async function request<T>(
   user: User,
-  resource: 'overview' | 'config' | 'monitoring' | 'notification-recipients' | 'notifications',
+  resource: 'overview' | 'config' | 'monitoring' | 'analytics-events' | 'notification-recipients' | 'notifications',
   method: 'GET' | 'PUT' | 'POST' = 'GET',
   body?: unknown,
   query?: Record<string, string>,
@@ -77,6 +77,7 @@ async function request<T>(
 }
 
 export const loadAdminOverview = (user: User) => request<AdminOverview>(user, 'overview')
+export const loadAdminAnalytics = (user: User) => request<import('../../../shared/adminAnalytics.js').AdminAnalytics>(user, 'analytics-events')
 export const loadRemoteConfig = (user: User) => request<RemoteConfigSnapshot>(user, 'config')
 export const saveRemoteConfig = (user: User, snapshot: RemoteConfigUpdate) =>
   request<RemoteConfigSnapshot>(user, 'config', 'PUT', {

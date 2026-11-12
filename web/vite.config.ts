@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
     'CRASHLYTICS_BIGQUERY_TABLE',
     'SESSIONS_BIGQUERY_TABLE',
     'BIGQUERY_LOCATION',
+    'GA4_PROPERTY_ID',
+    'GA4_ANDROID_STREAM_ID',
   ]) {
     if (!process.env[name] && env[name]) process.env[name] = env[name]
   }

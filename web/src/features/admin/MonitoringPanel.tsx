@@ -3,7 +3,7 @@ import type { User } from 'firebase/auth'
 import type { AdminMonitoring } from '../../../shared/adminMonitoring'
 import { loadAdminMonitoring } from './adminService'
 
-function Chart({ title, values, labels, percent = false, bars = false }: {
+export function Chart({ title, values, labels, percent = false, bars = false }: {
   title: string
   values: (number | null)[] | null
   labels: string[]

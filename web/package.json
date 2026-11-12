@@ -8,11 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:notifications": "tsc server/adminNotifications.test.ts tests/notificationDelivery.test.ts --outDir dist-ssr/admin-notification-tests --rootDir . --module NodeNext --moduleResolution NodeNext --target ES2023 --skipLibCheck --strict && node --test --test-concurrency=1 dist-ssr/admin-notification-tests/server/adminNotifications.test.js dist-ssr/admin-notification-tests/tests/notificationDelivery.test.js"
+    "test:notifications": "tsc server/adminNotifications.test.ts tests/notificationDelivery.test.ts --outDir dist-ssr/admin-notification-tests --rootDir . --module NodeNext --moduleResolution NodeNext --target ES2023 --skipLibCheck --strict && node --test --test-concurrency=1 dist-ssr/admin-notification-tests/server/adminNotifications.test.js dist-ssr/admin-notification-tests/tests/notificationDelivery.test.js",
+    "test:analytics": "tsc server/adminAnalytics.test.ts --outDir dist-ssr/admin-analytics-tests --rootDir . --module NodeNext --moduleResolution NodeNext --target ES2023 --skipLibCheck --strict && node --test dist-ssr/admin-analytics-tests/server/adminAnalytics.test.js"
   },
   "dependencies": {
     "firebase": "^13.1.0",
     "firebase-admin": "^14.5.0",
+    "google-auth-library": "11.3.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
