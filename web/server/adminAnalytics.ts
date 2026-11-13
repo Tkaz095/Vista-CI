@@ -2,6 +2,31 @@ import type { AdminAnalytics, AnalyticsMetrics } from '../shared/adminAnalytics.
 import { analyticsAccessToken } from './analyticsCredentials.js'
 
 class AnalyticsError extends Error {}
+
+async function analyticsResponseError(response: Response, propertyId: string): Promise<string> {
+  if (response.status === 403) {
+    // Inspect only known error codes; provider messages and payloads stay server-side.
+    const body = await response.json().catch(() => null) as {
+      error?: { message?: unknown; details?: { reason?: string; domain?: string; metadata?: { service?: string } }[] }
+    } | null
+    const details = Array.isArray(body?.error?.details) ? body.error.details : []
+    if (details.some(detail => detail?.domain === 'googleapis.com' &&
+      detail.reason === 'SERVICE_DISABLED' && detail.metadata?.service === 'analyticsdata.googleapis.com'))
+      return 'Google Analytics Data API chưa bật cho project của credential backend. Bật analyticsdata.googleapis.com trong Google Cloud rồi thử lại.'
+    if (details.some(detail => detail?.domain === 'googleapis.com' && detail.reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT'))
+      return 'Token backend thiếu scope analytics.readonly. Kiểm tra credential Analytics; với ADC user, đăng nhập lại ADC có scope Analytics.'
+    if (typeof body?.error?.message === 'string' &&
+      body.error.message.includes('User does not have sufficient permissions for this property'))
+      return `Credential backend không có quyền đọc GA4 property ${propertyId}. Đối chiếu GA4_PROPERTY_ID với Property ID trong Google Analytics → Admin → Property details; cấp Viewer cho đúng service account tại Property access management của chính property này. Quyền Firebase IAM không thay thế quyền GA4.`
+    return `Google Analytics từ chối truy cập GA4 property ${propertyId} (HTTP 403). Kiểm tra Property ID, quyền Viewer của credential backend và Google Analytics Data API.`
+  }
+  const messages: Record<number, string> = {
+    401: 'Credential backend chưa xác thực được Google Analytics. Kiểm tra service account và scope analytics.readonly.',
+    404: `Không tìm thấy GA4 property ${propertyId}. Kiểm tra GA4_PROPERTY_ID và quyền service account.`,
+    429: 'Google Analytics đang giới hạn truy vấn. Chờ một lúc rồi thử lại.',
+  }
+  return messages[response.status] ?? `Chưa đọc được Google Analytics (HTTP ${response.status}). Vui lòng thử lại.`
+}
 interface Report {
   dimensionHeaders?: { name: string }[]
   metricHeaders?: { name: string }[]
@@ -97,13 +122,7 @@ export function createAnalyticsLoader(deps: {
           ] }),
         })
         if (!response.ok) {
-          const messages: Record<number, string> = {
-            401: 'Credential backend chưa xác thực được Google Analytics. Kiểm tra service account và scope analytics.readonly.',
-            403: 'Bật Google Analytics Data API và cấp quyền Viewer trên GA4 property cho email service account backend. Quyền IAM Firebase không thay thế quyền GA4.',
-            404: 'Không tìm thấy GA4 property. Kiểm tra GA4_PROPERTY_ID và quyền service account.',
-            429: 'Google Analytics đang giới hạn truy vấn. Chờ một lúc rồi thử lại.',
-          }
-          throw new AnalyticsError(messages[response.status] ?? `Chưa đọc được Google Analytics (HTTP ${response.status}). Vui lòng thử lại.`)
+          throw new AnalyticsError(await analyticsResponseError(response, propertyId))
         }
         const body = await response.json() as { reports?: Report[] }
         const data = parseAnalyticsReports(body.reports ?? [], propertyId, streamId, deps.now())
