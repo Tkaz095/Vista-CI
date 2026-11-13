@@ -195,3 +195,12 @@
   .admin-notification-actions { flex-direction: column; }
   .admin-notification-actions button { white-space: normal; }
 }
+
+.admin-event-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-events-scroll { overflow-x: auto; }
+.admin-events-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-events-table caption { text-align: left; font-weight: 600; padding: 12px 0; }
+.admin-events-table th, .admin-events-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--admin-border, #dce5f2); }
+.admin-events-table thead th { color: var(--admin-muted, #52627c); }
+.admin-events-table td:nth-last-child(-n+2), .admin-events-table thead th:nth-last-child(-n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+.admin-events-table code { overflow-wrap: anywhere; }

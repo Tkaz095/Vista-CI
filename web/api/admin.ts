@@ -13,6 +13,7 @@ import {
 } from '../server/githubAuth.js'
 
 import { loadMonitoring } from '../server/adminMonitoring.js'
+import { loadAnalytics } from '../server/adminAnalytics.js'
 import { listNotificationRecipients, parseNotificationDraft, readNotificationResult, sendAdminNotification } from '../server/adminNotifications.js'
 
 const configDefaults = {
@@ -138,6 +139,10 @@ export default async function adminApi(req: IncomingMessage, res: ServerResponse
     const admin = await authenticateAdmin(req)
     const parameters = new URL(req.url ?? '/', 'http://localhost').searchParams
     const resource = parameters.get('resource')
+    if (resource === 'analytics-events' && req.method === 'GET') {
+      json(res, 200, await loadAnalytics())
+      return
+    }
     if (resource === 'notification-recipients' && req.method === 'GET') {
       json(res, 200, await listNotificationRecipients(database(), firebaseAuth(), parameters.get('cursor')))
       return
