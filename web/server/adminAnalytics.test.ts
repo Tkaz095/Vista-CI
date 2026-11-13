@@ -43,7 +43,7 @@ test('exposes thresholding and truncated event table', () => {
   assert.match(data.warnings[0], /100/)
 })
 
-function setup(options: { propertyId?: string; streamId?: string; status?: number; empty?: boolean } = {}) {
+function setup(options: { propertyId?: string; streamId?: string; status?: number; empty?: boolean; apiError?: Record<string, unknown> } = {}) {
   let calls = 0
   let tokenCalls = 0
   let body: Record<string, unknown> = {}
@@ -56,7 +56,7 @@ function setup(options: { propertyId?: string; streamId?: string; status?: numbe
       assert.equal(input, 'https://analyticsdata.googleapis.com/v1beta/properties/123:batchRunReports')
       assert.equal((init?.headers as Record<string, string>).Authorization, 'Bearer fake-test-token')
       body = JSON.parse(init?.body as string) as Record<string, unknown>
-      return new Response(JSON.stringify(options.status ? { error: { message: 'upstream-secret-must-not-leak' } } : {
+      return new Response(JSON.stringify(options.status ? { error: options.apiError ?? { message: 'upstream-secret-must-not-leak' } } : {
         reports: options.empty ? [report([], []), report(['eventName'], []), report(['date'], [])] : reports(),
       }), { status: options.status ?? 200, headers: { 'Content-Type': 'application/json' } })
     },
@@ -100,6 +100,40 @@ test('permission/rate-limit failures are unavailable, sanitized and retryable', 
     assert.ok(!JSON.stringify(value).includes('upstream-secret'))
     await s.loader()
     assert.equal(s.calls(), 2)
+  }
+})
+
+test('property permission errors identify the configured property without exposing upstream text', async () => {
+  const s = setup({ status: 403, apiError: { message: 'User does not have sufficient permissions for this property. upstream-secret-must-not-leak' } })
+  const value = await s.loader()
+  assert.equal(value.status, 'unavailable')
+  assert.match(value.message!, /GA4 property 123/)
+  assert.match(value.message!, /GA4_PROPERTY_ID/)
+  assert.match(value.message!, /Property access management/)
+  assert.ok(!value.message!.includes('upstream-secret'))
+})
+
+test('disabled Data API and insufficient OAuth scope get separate recovery instructions', async () => {
+  for (const [reason, expected] of [
+    ['SERVICE_DISABLED', /Data API chưa bật/],
+    ['ACCESS_TOKEN_SCOPE_INSUFFICIENT', /thiếu scope analytics.readonly/],
+  ] as const) {
+    const s = setup({ status: 403, apiError: {
+      message: 'upstream-secret-must-not-leak',
+      details: [{ domain: 'googleapis.com', reason, metadata: { service: 'analyticsdata.googleapis.com' } }],
+    } })
+    const value = await s.loader()
+    assert.match(value.message!, expected)
+    assert.ok(!value.message!.includes('upstream-secret'))
+  }
+})
+
+test('unrecognized or malformed permission details retain a safe diagnostic', async () => {
+  for (const details of [null, {}, [null], [{ reason: 'SERVICE_DISABLED', domain: 'other', metadata: { service: 'analyticsdata.googleapis.com' } }]]) {
+    const s = setup({ status: 403, apiError: { details, message: 'upstream-secret-must-not-leak' } })
+    const value = await s.loader()
+    assert.match(value.message!, /GA4 property 123 \(HTTP 403\)/)
+    assert.ok(!value.message!.includes('upstream-secret'))
   }
 })
 
