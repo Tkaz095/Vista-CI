@@ -15,6 +15,7 @@ import type { AdminOverview, RemoteConfigSnapshot } from './adminService'
 import './admin.css'
 import { MonitoringPanel } from './MonitoringPanel'
 import { NotificationsPanel } from './NotificationsPanel'
+import { EventAnalyticsPanel } from './EventAnalyticsPanel'
 
 type AdminTab = 'analytics' | 'monitoring' | 'config' | 'notifications'
 type AccessState = 'checking' | 'signed_out' | 'verifying' | 'denied' | 'error' | 'ready'
@@ -279,6 +280,7 @@ export function AdminConsole() {
       <div className="admin-content" id="admin-content" tabIndex={-1}>
         {activeTab === 'analytics' && (overview ? <AnalyticsPanel overview={overview} onRefresh={() => void refreshOverview()} refreshing={refreshing} /> : <div className="admin-panel admin-loading" role="status">Đang tải số liệu…</div>)}
         {activeTab === 'analytics' && refreshError && <div className="admin-alert" role="alert">{refreshError}</div>}
+        {activeTab === 'analytics' && <EventAnalyticsPanel user={user} />}
         {activeTab === 'monitoring' && <MonitoringPanel user={user} />}
         {activeTab === 'config' && <ConfigPanel user={user} snapshot={configSnapshot} onSaved={setConfigSnapshot} />}
         <div hidden={activeTab !== 'notifications'}><NotificationsPanel key={user.uid} user={user} active={activeTab === 'notifications'} /></div>
